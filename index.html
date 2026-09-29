@@ -208,7 +208,7 @@ function renderAdmin(){
     + '<div class="tabs">'
     + tabBtn('students','📋 學生總表') + tabBtn('pending','🎁 待批核 (' + (pending.length + binds.length) + ')')
     + tabBtn('gifts','🎀 禮物清單') + tabBtn('logs','📜 加分紀錄') + '</div><div id="tabc"></div>'
-    + '<div class="foot"><button class="btn btn2" onclick="backup()">匯出 CSV</button><button class="btn" onclick="boot()">重新整理</button></div>';
+    + '<div class="foot"><button class="btn btn3" onclick="exportXlsx()">📊 匯出 Excel</button><button class="btn btn2" onclick="backup()">匯出 CSV</button><button class="btn" onclick="boot()">重新整理</button></div>';
   shell(html);
   renderTab();
 }
@@ -293,6 +293,152 @@ async function editGift(row){
   try { await api('admin.saveGift', { gift:{ row, icon, name, cost, stock, limitType, limitN, on, note:g.note } }); toast('已儲存'); await loadAdmin(); renderAdmin(); }
   catch (e) { toast(e.message, true); }
 }
+/* ================= XLSX 產生器（純前端、無外部依賴） =================
+   產生真正的 .xlsx（Office Open XML）：多工作表、標題列顏色、欄寬、凍結首行、自動篩選。
+   sheets = [{ name, cols:[widths], rows:[[...values]] }]，每張表第一列視為標題列。
+*/
+const _CRC_T = (function () {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) { let c = n; for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1); t[n] = c >>> 0; }
+  return t;
+})();
+function _crc32(b) { let c = 0xFFFFFFFF; for (let i = 0; i < b.length; i++) c = _CRC_T[(c ^ b[i]) & 0xFF] ^ (c >>> 8); return (c ^ 0xFFFFFFFF) >>> 0; }
+function _u16(n) { return [n & 255, (n >> 8) & 255]; }
+function _u32(n) { return [n & 255, (n >>> 8) & 255, (n >>> 16) & 255, (n >>> 24) & 255]; }
+function _zip(files) {                       // files: [[name, Uint8Array], ...]
+  const enc = new TextEncoder(), parts = [], cd = []; let off = 0;
+  files.forEach(function (f) {
+    const nm = enc.encode(f[0]), d = f[1], crc = _crc32(d);
+    const lh = new Uint8Array([].concat(_u32(0x04034b50), _u16(20), _u16(0x0800), _u16(0), _u16(0), _u16(0), _u32(crc), _u32(d.length), _u32(d.length), _u16(nm.length), _u16(0)));
+    parts.push(lh, nm, d);
+    cd.push(new Uint8Array([].concat(_u32(0x02014b50), _u16(20), _u16(20), _u16(0x0800), _u16(0), _u16(0), _u16(0), _u32(crc), _u32(d.length), _u32(d.length), _u16(nm.length), _u16(0), _u16(0), _u16(0), _u16(0), _u32(0), _u32(off))), nm);
+    off += lh.length + nm.length + d.length;
+  });
+  let csz = 0; cd.forEach(function (x) { csz += x.length; });
+  const eocd = new Uint8Array([].concat(_u32(0x06054b50), _u16(0), _u16(0), _u16(files.length), _u16(files.length), _u32(csz), _u32(off), _u16(0)));
+  const all = parts.concat(cd, [eocd]);
+  let total = 0; all.forEach(function (x) { total += x.length; });
+  const out = new Uint8Array(total); let p = 0;
+  all.forEach(function (x) { out.set(x, p); p += x.length; });
+  return out;
+}
+function _colName(i) { let s = ''; i++; while (i > 0) { const m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+function _xe(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]; }); }
+function _enc(s) { return new TextEncoder().encode(s); }
+
+const _STYLES = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+  + '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+  + '<fonts count="2">'
+  + '<font><sz val="11"/><color rgb="FF2C3E50"/><name val="Calibri"/></font>'
+  + '<font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font>'
+  + '</fonts>'
+  + '<fills count="3">'
+  + '<fill><patternFill patternType="none"/></fill>'
+  + '<fill><patternFill patternType="gray125"/></fill>'
+  + '<fill><patternFill patternType="solid"><fgColor rgb="FFC98B2E"/><bgColor indexed="64"/></patternFill></fill>'
+  + '</fills>'
+  + '<borders count="2">'
+  + '<border><left/><right/><top/><bottom/><diagonal/></border>'
+  + '<border><left style="thin"><color rgb="FFE0C89A"/></left><right style="thin"><color rgb="FFE0C89A"/></right><top style="thin"><color rgb="FFE0C89A"/></top><bottom style="thin"><color rgb="FFE0C89A"/></bottom><diagonal/></border>'
+  + '</borders>'
+  + '<cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs>'
+  + '<cellXfs count="3">'
+  + '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/>'
+  + '<xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="center" vertical="center"/></xf>'
+  + '<xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf>'
+  + '</cellXfs>'
+  + '<cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>'
+  + '</styleSheet>';
+
+function _sheetXml(sh) {
+  const rows = sh.rows || [];
+  const nCols = rows.length ? Math.max.apply(null, rows.map(function (r) { return r.length; })) : 0;
+  const cols = (sh.cols || []).slice(0, nCols).map(function (w, i) {
+    return '<col min="' + (i + 1) + '" max="' + (i + 1) + '" width="' + w + '" customWidth="1"/>';
+  }).join('');
+  let sd = '';
+  rows.forEach(function (r, ri) {
+    let cells = '';
+    for (let ci = 0; ci < nCols; ci++) {
+      const v = r[ci], ref = _colName(ci) + (ri + 1);
+      if (typeof v === 'number' && isFinite(v)) cells += '<c r="' + ref + '" s="' + (ri === 0 ? 1 : 0) + '"><v>' + v + '</v></c>';
+      else cells += '<c r="' + ref + '" s="' + (ri === 0 ? 1 : 2) + '" t="inlineStr"><is><t xml:space="preserve">' + _xe(v) + '</t></is></c>';
+    }
+    sd += '<row r="' + (ri + 1) + '"' + (ri === 0 ? ' ht="22" customHeight="1"' : '') + '>' + cells + '</row>';
+  });
+  const dim = nCols ? 'A1:' + _colName(nCols - 1) + Math.max(rows.length, 1) : 'A1';
+  return '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+    + '<dimension ref="' + dim + '"/>'
+    + '<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/>'
+    + '<selection pane="bottomLeft" activeCell="A2" sqref="A2"/></sheetView></sheetViews>'
+    + '<sheetFormatPr defaultRowHeight="16"/>'
+    + (cols ? '<cols>' + cols + '</cols>' : '')
+    + '<sheetData>' + sd + '</sheetData>'
+    + (rows.length > 1 ? '<autoFilter ref="' + dim + '"/>' : '')
+    + '</worksheet>';
+}
+
+function buildXlsx(sheets) {
+  const files = [];
+  const ct = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>',
+    '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">',
+    '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>',
+    '<Default Extension="xml" ContentType="application/xml"/>',
+    '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'];
+  const wbSheets = [], wbRels = [];
+  sheets.forEach(function (sh, i) {
+    const n = i + 1;
+    ct.push('<Override PartName="/xl/worksheets/sheet' + n + '.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>');
+    wbSheets.push('<sheet name="' + _xe(sh.name) + '" sheetId="' + n + '" r:id="rId' + n + '"/>');
+    wbRels.push('<Relationship Id="rId' + n + '" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet' + n + '.xml"/>');
+    files.push(['xl/worksheets/sheet' + n + '.xml', _enc(_sheetXml(sh))]);
+  });
+  ct.push('<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>');
+  wbRels.push('<Relationship Id="rIdS" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>');
+
+  files.unshift(['[Content_Types].xml', _enc(ct.join(''))]);
+  files.push(['_rels/.rels', _enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+    + '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>')]);
+  files.push(['xl/workbook.xml', _enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+    + '<sheets>' + wbSheets.join('') + '</sheets></workbook>')]);
+  files.push(['xl/_rels/workbook.xml.rels', _enc('<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+    + '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' + wbRels.join('') + '</Relationships>')]);
+  files.push(['xl/styles.xml', _enc(_STYLES)]);
+  return _zip(files);
+}
+
+/* ================= 匯出 Excel (.xlsx) ================= */
+function exportXlsx(){
+  try {
+    const s  = (ADMIN && ADMIN.students) || [], rq = (ADMIN && ADMIN.requests) || [];
+    const gs = (ADMIN && ADMIN.gifts) || [],    lg = (ADMIN && ADMIN.logs) || [];
+    const sheets = [
+      { name:'學生總表', cols:[16,7,6,12,22,7,6,9,10,26],
+        rows:[['組別','班別','班號','中文姓名','英文姓名','積分','凍結','狀態','綁定','電郵']]
+          .concat(s.map(x=>[x.group,x.cls,x.no,x.chi,x.eng,x.points,x.frozen||0,x.status,x.bindState||'—',x.email||''])) },
+      { name:'換領紀錄', cols:[18,7,6,12,18,7,9],
+        rows:[['時間','班別','班號','姓名','禮物','分數','狀態']]
+          .concat(rq.map(x=>[x.time,x.cls,x.no,x.name,x.gift,x.cost,x.state])) },
+      { name:'禮物清單', cols:[8,22,7,8,10,10,7,22],
+        rows:[['圖示','名稱','積分','存貨','上限類型','上限次數','上架','備註']]
+          .concat(gs.map(x=>[x.icon,x.name,x.cost,(x.stock>=999?'無限':x.stock),x.limitType,x.limitN,(x.on==='是'||x.on===true)?'是':'否',x.note||''])) },
+      { name:'加分紀錄', cols:[18,12,7,7,30],
+        rows:[['時間','姓名','班別','分數','原因']]
+          .concat(lg.map(x=>[x.time,x.name,x.cls,x.points,x.reason])) }
+    ];
+    const bytes = buildXlsx(sheets);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(new Blob([bytes], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
+    a.download = '數學科積分獎勵_' + new Date().toISOString().slice(0,10) + '.xlsx';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(()=>URL.revokeObjectURL(a.href), 5000);
+    toast('已匯出 Excel（' + s.length + ' 位學生、4 個工作表）');
+  } catch (e) { toast('匯出失敗：' + e.message, true); }
+}
+
 function backup(){
   const rows = [['組別','班別','班號','英文姓名','中文姓名','積分','凍結','狀態','綁定電郵']];
   ADMIN.students.forEach(s=>rows.push([s.group,s.cls,s.no,s.eng,s.chi,s.points,s.frozen||0,s.status,s.email]));
