@@ -1,0 +1,310 @@
+<!doctype html>
+<html lang="zh-HK">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>數學科獎勵計劃</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;color:#4a2f10;
+ background:#f6e7c8;background-image:radial-gradient(circle at 20% 30%,rgba(255,255,255,.55) 0 6px,transparent 7px),radial-gradient(circle at 70% 70%,rgba(255,255,255,.5) 0 5px,transparent 6px),linear-gradient(160deg,#fdf0cf,#f3dda6 60%,#eecf8e);
+ background-size:220px 220px,180px 180px,100% 100%;min-height:100vh;padding:18px;-webkit-text-size-adjust:100%}
+.wrap{max-width:1120px;margin:0 auto}
+.card{background:#fdf7e6;border:8px solid #c98b2e;border-radius:26px;box-shadow:0 12px 0 #a36c1c,0 20px 40px rgba(0,0,0,.25);padding:20px 22px}
+.logo{text-align:center;margin:4px 0 16px}
+.logo b{font-size:clamp(28px,7vw,48px);letter-spacing:3px;color:#ffd54a;-webkit-text-stroke:7px #8a4a12;paint-order:stroke fill;text-shadow:0 6px 0 #8a4a12,0 9px 14px rgba(0,0,0,.3);display:inline-block}
+.logo span{display:block;font-size:13px;color:#b07a24;font-weight:700;letter-spacing:5px;margin-top:2px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;flex-wrap:wrap}
+.pill{background:linear-gradient(#fff6d8,#ffe29a);border:4px solid #b87b22;border-radius:999px;padding:8px 20px;font-weight:800;font-size:18px;box-shadow:0 4px 0 #a3691a,inset 0 2px 0 #fff}
+.pill em{font-style:normal;color:#e2571c;font-size:26px}
+.nick{font-size:13px;background:#8a4a12;color:#ffe9b0;border-radius:999px;padding:7px 16px;font-weight:700}
+table{width:100%;border-collapse:separate;border-spacing:0;border:4px solid #b87b22;border-radius:16px;overflow:hidden;background:#fffdf5;font-size:14px}
+thead th{background:linear-gradient(#ffd766,#efb02f);color:#5a3407;font-size:14px;padding:10px 8px;border-right:3px solid #c98b2e;white-space:nowrap}
+thead th:last-child{border-right:0}
+td{padding:9px 8px;border-top:3px solid #ecd7a5;border-right:3px solid #f0e3c6;text-align:center;background:#fffdf5}
+td:last-child{border-right:0}
+tr:nth-child(even) td{background:#fffaee}
+.ico{font-size:26px;line-height:1}
+.item{font-weight:800;color:#5a3407;text-align:left;padding-left:12px}
+.item small{display:block;font-weight:600;color:#a3803f;font-size:11px}
+.cost{font-weight:900;color:#e2571c;font-size:17px}
+.stock{color:#3a8a3a;font-weight:800}
+.limit{color:#d0296a;font-weight:800;font-size:12px}
+.btn{background:linear-gradient(#ffb03a,#f07d18);color:#fff;border:3px solid #fff;border-radius:999px;padding:9px 20px;font-size:14px;font-weight:900;cursor:pointer;box-shadow:0 5px 0 #b85a0d,0 8px 12px rgba(0,0,0,.18);text-shadow:0 2px 0 rgba(0,0,0,.25);font-family:inherit;transition:.12s}
+.btn:hover{transform:translateY(-2px)}
+.btn:active{transform:translateY(3px);box-shadow:0 2px 0 #b85a0d}
+.btn.dis{background:linear-gradient(#cfcabc,#b0a999);box-shadow:0 5px 0 #8e8778;cursor:not-allowed}
+.btn2{background:linear-gradient(#d76bd0,#a83fae);box-shadow:0 5px 0 #7d2b82,0 8px 12px rgba(0,0,0,.18)}
+.btn3{background:linear-gradient(#68c76a,#2f8f3f);box-shadow:0 5px 0 #1f6a2c,0 8px 12px rgba(0,0,0,.18)}
+.btnS{padding:5px 12px;font-size:12px;box-shadow:0 3px 0 #b85a0d}
+.foot{display:flex;justify-content:space-between;margin-top:14px;gap:10px;flex-wrap:wrap}
+.center{text-align:center;padding:26px 10px}
+.center h2{font-size:22px;color:#8a4a12;margin-bottom:10px}
+.center p{color:#a3803f;font-weight:700;margin-bottom:16px;line-height:1.7}
+.inp{font-family:inherit;font-size:17px;padding:10px 14px;border:3px solid #c98b2e;border-radius:12px;background:#fffdf5;text-align:center;width:130px}
+.inp.sm{font-size:14px;padding:7px 10px;width:auto;border-width:2px;text-align:left}
+select.inp{width:auto;text-align:left}
+.gbtn{display:inline-flex;align-items:center;gap:10px;background:#fff;border:3px solid #c98b2e;border-radius:999px;padding:12px 24px;font-weight:900;font-size:16px;cursor:pointer;font-family:inherit;color:#4a2f10;box-shadow:0 5px 0 #a3691a}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.tab{border:3px solid #c98b2e;background:#fffdf5;border-radius:999px;padding:8px 18px;font-weight:800;font-size:14px;cursor:pointer;color:#8a4a12;font-family:inherit}
+.tab.on{background:linear-gradient(#ffd766,#efb02f);color:#5a3407}
+.req{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 14px;border:3px dashed #e0b060;background:#fffdf6;border-radius:14px;margin-bottom:10px;flex-wrap:wrap}
+.req .who{font-weight:900;font-size:15px}
+.req .what{font-size:12px;color:#a3803f}
+.req .gift{font-weight:800;color:#a3601a}
+.stat{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px}
+.stat div{background:#fffdf5;border:3px solid #e8cf9a;border-left:8px solid #c98b2e;border-radius:14px;padding:10px 14px}
+.stat b{display:block;font-size:22px;color:#5a3407}
+.stat span{font-size:12px;color:#a3803f;font-weight:700}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(140px);background:#2f8f3f;color:#fff;padding:13px 26px;border-radius:999px;font-weight:800;box-shadow:0 10px 24px rgba(0,0,0,.35);transition:.28s;opacity:0;z-index:99;max-width:92vw;text-align:center}
+.toast.on{transform:translateX(-50%) translateY(0);opacity:1}
+.toast.err{background:#c0392b}
+.hint{font-size:12px;color:#a3803f;margin-top:10px;line-height:1.7}
+.hide{display:none !important}
+.tblwrap{overflow-x:auto}
+.sechd{font-size:16px;font-weight:900;color:#8a4a12;margin:16px 0 10px;display:flex;align-items:center;gap:8px}
+.badge{background:#e2571c;color:#fff;font-size:12px;border-radius:999px;padding:2px 10px}
+.spin{display:inline-block;width:18px;height:18px;border:3px solid #e0c89a;border-top-color:#c98b2e;border-radius:50%;animation:sp .8s linear infinite;vertical-align:middle}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<div class="wrap" id="app"><div class="card"><div class="center"><span class="spin"></span><p style="margin-top:12px">載入中…</p></div></div></div>
+<div class="toast" id="toast"></div>
+<script>
+/* ================= 設定 ================= */
+const API = 'https://script.google.com/macros/s/AKfycbznk8D1DbAdLec28EX7j9CRdmBFjthyaoRweFc3M_L6jsgO98y2jlM11f46BIs8rt3x/exec';
+const CLIENT_ID = 'PASTE_WEB_CLIENT_ID_HERE';
+
+/* ================= 狀態 ================= */
+let IDT = sessionStorage.getItem('idtoken') || '';
+let ME = null, GIFTS = [], ADMIN = null, TAB = 'students';
+
+/* ================= 工具 ================= */
+const $ = s => document.querySelector(s);
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+function toast(msg, err){
+  const t = $('#toast'); t.textContent = msg; t.className = 'toast on' + (err ? ' err' : '');
+  clearTimeout(t._h); t._h = setTimeout(()=>t.className='toast', 2600);
+}
+async function api(action, payload){
+  const body = Object.assign({ action, token: IDT }, payload || {});
+  const r = await fetch(API, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) });
+  const j = await r.json();
+  if (!j.ok) throw new Error(j.error || '發生錯誤');
+  return j.data;
+}
+function shell(inner){
+  $('#app').innerHTML = '<div class="card"><div class="logo"><b>獎勵兌換所</b><span>數學科獎勵計劃 2026-2027</span></div>' + inner + '</div>';
+}
+
+/* ================= 登入 ================= */
+function renderLogin(){
+  shell('<div class="center"><h2>請先登入</h2><p>使用你的校內 Google 帳號登入<br>（@qts.edu.hk）</p>'
+    + '<div id="gbtn"></div>'
+    + '<div class="hint">首次登入需要輸入班別及班號，老師批准後即可使用。</div></div>');
+  google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredential });
+  google.accounts.id.renderButton($('#gbtn'), { theme:'outline', size:'large', text:'signin_with', locale:'zh_TW', width:280 });
+}
+function onCredential(res){
+  IDT = res.credential; sessionStorage.setItem('idtoken', IDT);
+  boot();
+}
+
+/* ================= 啟動 ================= */
+async function boot(){
+  try {
+    if (!IDT || CLIENT_ID.indexOf('PASTE') === 0) { renderLogin(); return; }
+    ME = await api('me');
+    if (ME.admin) { await loadAdmin(); renderAdmin(); return; }
+    if (ME.pending) { renderPending(); return; }
+    if (!ME.bound) { renderBind(); return; }
+    GIFTS = await api('gifts');
+    const reqs = await api('myRequests');
+    renderStudent(reqs);
+  } catch (e) {
+    if (String(e.message||'').indexOf('登入') >= 0) { sessionStorage.removeItem('idtoken'); IDT=''; renderLogin(); return; }
+    shell('<div class="center"><h2>出錯了</h2><p>' + esc(e.message) + '</p><button class="btn" onclick="boot()">重試</button></div>');
+  }
+}
+
+/* ================= 學生：綁定 ================= */
+function renderBind(){
+  const classes = ['2A','2B','2C','2D','3A','3B','3C','3D','4A','4B','4C','4D','5A','5B','5C','5D','6A','6B','6C','6D'];
+  shell('<div class="center"><h2>首次使用：確認身分</h2>'
+    + '<p>請輸入你的班別及班號（座位號）<br>例：4C 班 5 號 → 選「4C」、輸入「5」</p>'
+    + '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center">'
+    + '<select class="inp" id="cls">' + classes.map(c=>'<option>'+c+'</option>').join('') + '</select>'
+    + '<input class="inp" id="no" type="number" min="1" max="45" placeholder="班號">'
+    + '</div>'
+    + '<div style="margin-top:18px"><button class="btn btn3" onclick="doBind()">送出申請</button></div>'
+    + '<div class="hint">你的登入電郵：' + esc(ME.email) + '<br>送出後老師會核對並批准，一經批准即永久綁定。</div></div>');
+}
+async function doBind(){
+  const cls = $('#cls').value, no = $('#no').value;
+  if (!no) { toast('請輸入班號', true); return; }
+  try { await api('bind', { cls, no }); toast('已送出，等候老師批准'); setTimeout(boot, 800); }
+  catch (e) { toast(e.message, true); }
+}
+function renderPending(){
+  shell('<div class="center"><h2>等候老師批准</h2><p>你已申請綁定 ' + esc(ME.cls) + ' 班 ' + esc(ME.no) + ' 號（' + esc(ME.chi||'') + '）<br>老師批准後即可查看積分及換領禮物。</p>'
+    + '<button class="btn" onclick="boot()">重新整理</button></div>');
+}
+
+/* ================= 學生：兌換所 ================= */
+function renderStudent(reqs){
+  const s = ME.student, avail = ME.available;
+  let rows = '';
+  GIFTS.forEach(g=>{
+    const can = avail >= g.cost && g.stock > 0;
+    const stockTxt = g.stock >= 999 ? '無限' : g.stock;
+    rows += '<tr><td class="ico">' + esc(g.icon) + '</td>'
+      + '<td class="item">' + esc(g.name) + (g.note ? '<small>' + esc(g.note) + '</small>' : '<small>獲得 x1</small>') + '</td>'
+      + '<td class="cost">' + g.cost + '</td><td class="stock">' + stockTxt + '</td>'
+      + '<td class="limit">' + esc(g.limitType) + '限 ' + g.limitN + ' 次</td>'
+      + '<td>' + (can ? '<button class="btn" onclick="redeem(' + g.row + ',\'' + esc(g.name) + '\')">兌換</button>'
+                     : '<button class="btn dis" disabled>' + (g.stock > 0 ? '積分不足' : '已換完') + '</button>') + '</td></tr>';
+  });
+  let rh = '';
+  (reqs||[]).forEach(r=>{
+    const c = r.state === '已批准' ? '#2f8f3f' : (r.state === '已拒絕' ? '#c0392b' : '#d0296a');
+    rh += '<tr><td style="text-align:left;padding-left:12px">' + esc(r.gift) + '</td><td>' + r.cost + '</td>'
+        + '<td style="color:' + c + ';font-weight:900">' + esc(r.state) + '</td><td>' + esc(r.time) + '</td></tr>';
+  });
+  shell('<div class="bar"><div class="pill">我的積分：<em>' + s.points + '</em> ⭐</div>'
+    + '<div class="nick">' + esc(s.cls) + ' (' + s.no + ') ' + esc(s.chi) + '</div></div>'
+    + (s.frozen > 0 ? '<div class="hint" style="margin-bottom:10px">🔒 凍結中（待批核）：' + s.frozen + ' 分　｜　可用：<b>' + avail + '</b> 分</div>' : '')
+    + '<div class="tblwrap"><table><thead><tr><th>圖示</th><th>兌換物品</th><th>所需積分</th><th>存貨</th><th>兌換限制</th><th>兌換</th></tr></thead><tbody>'
+    + rows + '</tbody></table></div>'
+    + (rh ? '<div class="sechd">📜 我的換領紀錄</div><div class="tblwrap"><table><thead><tr><th style="text-align:left;padding-left:12px">禮物</th><th>積分</th><th>狀態</th><th>時間</th></tr></thead><tbody>' + rh + '</tbody></table></div>' : '')
+    + '<div class="foot"><button class="btn btn2" onclick="logout()">登出</button></div>');
+}
+async function redeem(row, name){
+  if (!confirm('確定要換領「' + name + '」嗎？\n所需積分會即時凍結，等候老師批准。')) return;
+  try { const r = await api('redeem', { giftRow: row }); toast('已送出！剩餘可用 ' + r.available + ' 分'); setTimeout(boot, 1200); }
+  catch (e) { toast(e.message, true); }
+}
+function logout(){ sessionStorage.removeItem('idtoken'); IDT=''; if (window.google) google.accounts.id.disableAutoSelect(); renderLogin(); }
+
+/* ================= 老師：管理台 ================= */
+async function loadAdmin(){
+  ADMIN = await api('admin.data');
+  GIFTS = ADMIN.gifts;
+}
+function renderAdmin(){
+  const stu = ADMIN.students, reqs = ADMIN.requests, logs = ADMIN.logs;
+  const pending = reqs.filter(r=>r.state === '待批核');
+  const binds = stu.filter(s=>s.bindState === '待批核');
+  const total = stu.reduce((a,s)=>a+(s.points||0),0);
+  const st = '<div class="stat">'
+    + '<div><b>' + stu.length + '</b><span>學生總數（4 組）</span></div>'
+    + '<div><b>' + total + '</b><span>全級總積分</span></div>'
+    + '<div><b>' + pending.length + '</b><span>待批核換領</span></div>'
+    + '<div><b>' + binds.length + '</b><span>待批准綁定</span></div></div>';
+
+  let html = '<div class="bar"><div class="nick">👩‍🏫 ' + esc(ME ? ME.student ? ME.student.email : ME.email : '') + ' 老師</div>'
+    + '<button class="btn btn2 btnS" onclick="logout()">登出</button></div>' + st
+    + '<div class="tabs">'
+    + tabBtn('students','📋 學生總表') + tabBtn('pending','🎁 待批核 (' + (pending.length + binds.length) + ')')
+    + tabBtn('gifts','🎀 禮物清單') + tabBtn('logs','📜 加分紀錄') + '</div><div id="tabc"></div>'
+    + '<div class="foot"><button class="btn btn2" onclick="backup()">匯出 CSV</button><button class="btn" onclick="boot()">重新整理</button></div>';
+  shell(html);
+  renderTab();
+}
+function tabBtn(id, label){ return '<button class="tab' + (TAB===id?' on':'') + '" onclick="TAB=\'' + id + '\';renderTab()">' + label + '</button>'; }
+function renderTab(){
+  document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
+  const c = $('#tabc');
+  if (TAB === 'students') {
+    let h = '<div class="tblwrap"><table><thead><tr><th>組別</th><th>班別</th><th>班號</th><th>姓名</th><th>積分</th><th>凍結</th><th>狀態</th><th>綁定</th><th>加分</th></tr></thead><tbody>';
+    ADMIN.students.forEach(s=>{
+      h += '<tr><td style="font-size:12px">' + esc(s.group) + '</td><td>' + esc(s.cls) + '</td><td>' + s.no + '</td>'
+        + '<td style="text-align:left">' + esc(s.chi) + '<div style="font-size:11px;color:#a3803f">' + esc(s.eng) + '</div></td>'
+        + '<td class="cost">' + s.points + '</td><td>' + (s.frozen||0) + '</td>'
+        + '<td style="font-size:12px">' + esc(s.status) + '</td><td style="font-size:11px">' + (s.bindState ? esc(s.bindState) : '—') + '</td>'
+        + '<td><button class="btn btnS" onclick="addPts(\'' + s.cls + '\',' + s.no + ',\'' + esc(s.chi) + '\')">+分</button></td></tr>';
+    });
+    c.innerHTML = h + '</tbody></table></div>';
+  } else if (TAB === 'pending') {
+    const rq = ADMIN.requests.filter(r=>r.state === '待批核');
+    const bd = ADMIN.students.filter(s=>s.bindState === '待批核');
+    let h = '<div class="sechd">🎁 換領申請 <span class="badge">' + rq.length + '</span></div>';
+    h += rq.length ? rq.map(r=>'<div class="req"><div><div class="who">' + esc(r.cls) + ' ' + r.no + ' ' + esc(r.name) + '</div>'
+      + '<div class="what">' + esc(r.time) + ' · 凍結 ' + r.cost + ' 分</div></div><div class="gift">' + esc(r.gift) + '</div>'
+      + '<div><button class="btn btn3 btnS" onclick="decide(\'' + esc(r.cls) + '\',' + r.no + ',\'' + esc(r.gift) + '\',1)">批准</button> '
+      + '<button class="btn btnS" style="background:#c0392b" onclick="decide(\'' + esc(r.cls) + '\',' + r.no + ',\'' + esc(r.gift) + '\',0)">拒絕</button></div></div>').join('')
+      : '<div class="hint">暫無待批核申請</div>';
+    h += '<div class="sechd">🔑 綁定申請 <span class="badge">' + bd.length + '</span></div>';
+    h += bd.length ? '<div class="tblwrap"><table><thead><tr><th>班別</th><th>班號</th><th>姓名</th><th>電郵</th><th>操作</th></tr></thead><tbody>'
+      + bd.map(s=>'<tr><td>' + esc(s.cls) + '</td><td>' + s.no + '</td><td>' + esc(s.chi) + '</td>'
+        + '<td style="font-size:11px">' + esc(s.email) + '</td>'
+        + '<td><button class="btn btn3 btnS" onclick="approveBind(\'' + s.cls + '\',' + s.no + ',1)">批准</button> '
+        + '<button class="btn btnS" style="background:#c0392b" onclick="approveBind(\'' + s.cls + '\',' + s.no + ',0)">拒絕</button></td></tr>').join('')
+      + '</tbody></table></div>' : '<div class="hint">暫無綁定申請</div>';
+    c.innerHTML = h;
+  } else if (TAB === 'gifts') {
+    let h = '<div class="tblwrap"><table><thead><tr><th>圖示</th><th>名稱</th><th>積分</th><th>存貨</th><th>上限</th><th>上架</th><th>操作</th></tr></thead><tbody>';
+    ADMIN.gifts.forEach(g=>{
+      h += '<tr><td class="ico">' + esc(g.icon) + '</td><td style="text-align:left">' + esc(g.name) + '</td><td class="cost">' + g.cost + '</td>'
+        + '<td>' + (g.stock >= 999 ? '無限' : g.stock) + '</td><td style="font-size:12px">' + esc(g.limitType) + ' ' + g.limitN + ' 次</td>'
+        + '<td>' + (g.on === '是' || g.on === true ? '✅' : '—') + '</td>'
+        + '<td><button class="btn btnS" onclick="editGift(' + g.row + ')">編輯</button></td></tr>';
+    });
+    c.innerHTML = h + '</tbody></table></div><div style="margin-top:12px"><button class="btn btn3" onclick="editGift(0)">+ 新增禮物</button></div>';
+  } else {
+    let h = '<div class="tblwrap"><table><thead><tr><th>時間</th><th>姓名</th><th>班別</th><th>分數</th><th>原因</th></tr></thead><tbody>';
+    (ADMIN.logs||[]).forEach(l=>{
+      h += '<tr><td style="font-size:12px">' + esc(l.time) + '</td><td>' + esc(l.name) + '</td><td>' + esc(l.cls) + '</td>'
+        + '<td style="color:' + (l.points>0?'#2f8f3f':'#c0392b') + ';font-weight:900">' + (l.points>0?'+':'') + l.points + '</td>'
+        + '<td style="text-align:left;font-size:12px">' + esc(l.reason) + '</td></tr>';
+    });
+    c.innerHTML = h + '</tbody></table></div>';
+  }
+}
+async function addPts(cls, no, name){
+  const v = prompt('為 ' + cls + ' ' + no + ' ' + name + ' 加分／扣分：\n（輸入正數加分，負數扣分）', '10');
+  if (v === null) return;
+  const pts = Number(v); if (!pts) { toast('分數不可為 0', true); return; }
+  const reason = prompt('原因（可留空）：', '') || '';
+  try { const r = await api('admin.addPoints', { cls, no, points: pts, reason }); toast(name + ' 現有 ' + r.points + ' 分'); await loadAdmin(); renderAdmin(); }
+  catch (e) { toast(e.message, true); }
+}
+async function decide(cls, no, gift, ok){
+  try { await api(ok ? 'admin.approve' : 'admin.reject', { cls, no, gift }); toast(ok ? '已批准' : '已拒絕（分數已退回）'); await loadAdmin(); renderAdmin(); }
+  catch (e) { toast(e.message, true); }
+}
+async function approveBind(cls, no, ok){
+  try {
+    if (ok) { await api('admin.setBind', { cls, no, state: '已批准' }); toast('已批准綁定'); }
+    else { await api('admin.undoBind', { cls, no }); toast('已拒絕並解除綁定'); }
+    await loadAdmin(); renderAdmin();
+  } catch (e) { toast(e.message, true); }
+}
+async function editGift(row){
+  const g = row ? ADMIN.gifts.find(x=>x.row === row) : { icon:'🎁', name:'', cost:0, stock:999, limitType:'每週', limitN:1, on:'是', note:'' };
+  const icon = prompt('圖示（emoji）', g.icon); if (icon === null) return;
+  const name = prompt('禮物名稱', g.name); if (name === null) return;
+  const cost = Number(prompt('所需積分', g.cost)); if (!cost) { toast('積分必須大於 0', true); return; }
+  const stock = Number(prompt('存貨（999 = 無限）', g.stock));
+  const limitType = prompt('上限類型（每週／每月／活動）', g.limitType) || '每週';
+  const limitN = Number(prompt('上限次數', g.limitN)) || 1;
+  const on = (prompt('是否上架？輸入 是 / 否', g.on === '是' || g.on === true ? '是' : '否') || '是') === '是';
+  try { await api('admin.saveGift', { gift:{ row, icon, name, cost, stock, limitType, limitN, on, note:g.note } }); toast('已儲存'); await loadAdmin(); renderAdmin(); }
+  catch (e) { toast(e.message, true); }
+}
+function backup(){
+  const rows = [['組別','班別','班號','英文姓名','中文姓名','積分','凍結','狀態','綁定電郵']];
+  ADMIN.students.forEach(s=>rows.push([s.group,s.cls,s.no,s.eng,s.chi,s.points,s.frozen||0,s.status,s.email]));
+  const csv = '\ufeff' + rows.map(r=>r.map(x=>'"' + String(x==null?'':x).replace(/"/g,'""') + '"').join(',')).join('\r\n');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([csv], { type:'text/csv' }));
+  a.download = 'reward_' + new Date().toISOString().slice(0,10) + '.csv'; a.click();
+  toast('已匯出 CSV');
+}
+
+/* ================= 啟動 ================= */
+window.addEventListener('load', ()=>{ setTimeout(boot, 300); });
+</script>
+</body>
+</html>
