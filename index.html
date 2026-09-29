@@ -66,6 +66,22 @@ select.inp{width:auto;text-align:left}
 .badge{background:#e2571c;color:#fff;font-size:12px;border-radius:999px;padding:2px 10px}
 .spin{display:inline-block;width:18px;height:18px;border:3px solid #e0c89a;border-top-color:#c98b2e;border-radius:50%;animation:sp .8s linear infinite;vertical-align:middle}
 @keyframes sp{to{transform:rotate(360deg)}}
+.langbar{display:flex;justify-content:center;gap:8px;margin-bottom:12px}
+.langbar button{padding:6px 16px;font-size:13px}
+.gimg{object-fit:cover;border-radius:10px;border:2px solid #e0c89a;vertical-align:middle;display:inline-block}
+.ipv{width:64px;height:64px;border:3px solid #c98b2e;border-radius:12px;background:#fffdf5;display:flex;align-items:center;justify-content:center;font-size:10px;color:#a3803f;overflow:hidden;text-align:center}
+.ipv img{width:100%;height:100%;object-fit:cover}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:14px;z-index:100;overflow:auto}
+.mbox{background:#fdf7e6;border:6px solid #c98b2e;border-radius:20px;max-width:540px;width:100%;max-height:92vh;overflow:auto;padding:16px}
+.mbox h3{color:#8a4a12;font-size:18px;margin-bottom:12px;text-align:center}
+.fld{margin-bottom:10px;text-align:left}
+.fld label{display:block;font-size:12px;font-weight:800;color:#8a4a12;margin-bottom:4px}
+.fld input,.fld select{width:100%;font-family:inherit;font-size:15px;padding:8px 10px;border:3px solid #c98b2e;border-radius:10px;background:#fffdf5;text-align:left}
+.fld input[type=range]{padding:0;border:0;background:transparent}
+.row2{display:flex;gap:10px}
+.row2 .fld{flex:1}
+.cropbox{width:200px;height:200px;margin:8px auto;border:4px solid #c98b2e;border-radius:16px;overflow:hidden;background:#fff;touch-action:none;cursor:move;position:relative}
+.cropbox canvas{display:block;width:200px;height:200px}
 </style>
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
@@ -76,6 +92,97 @@ select.inp{width:auto;text-align:left}
 /* ================= 設定 ================= */
 const API = 'https://script.google.com/macros/s/AKfycbznk8D1DbAdLec28EX7j9CRdmBFjthyaoRweFc3M_L6jsgO98y2jlM11f46BIs8rt3x/exec';
 const CLIENT_ID = '554383219138-c18g9omd2flmdpi3nttdpikd9ejsb1um.apps.googleusercontent.com';
+
+/* ================= 語言 ================= */
+let LANG = localStorage.getItem('lang') || 'zh';
+const I18N = {
+  zh: {
+    appTitle:'獎勵兌換所', appSub:'數學科獎勵計劃 2026-2027',
+    login:'請先登入', loginHint:'使用你的校內 Google 帳號登入', loginMail:'（@qts.edu.hk）',
+    firstTime:'首次登入需要輸入班別及班號，老師批准後即可使用。',
+    bindTitle:'首次使用：確認身分', bindDesc:'請輸入你的班別及班號（座位號）<br>例：4C 班 5 號 → 選「4C」、輸入「5」',
+    classNoPh:'班號', sendApply:'送出申請', yourEmail:'你的登入電郵：',
+    bindNote:'送出後老師會核對並批准，一經批准即永久綁定。', needClsNo:'請輸入班號', sentWait:'已送出，等候老師批准',
+    pendingTitle:'等候老師批准', pendingDesc:'你已申請綁定 {cls} 班 {no} 號（{chi}）<br>老師批准後即可查看積分及換領禮物。',
+    refresh:'重新整理', myPoints:'我的積分：', frozenNote:'🔒 凍結中（待批核）：', avail:'可用：', pts:'分',
+    thIcon:'圖示', thItem:'兌換物品', thCost:'所需積分', thStock:'存貨', thLimit:'兌換限制', thRedeem:'兌換',
+    unlim:'無限', gain1:'獲得 x1', notEnough:'積分不足', soldOut:'已換完',
+    perWeek:'每週', perMonth:'每月', perEvent:'活動', limitFmt:'{t}限 {n} 次',
+    myHistory:'📜 我的換領紀錄', thGift:'禮物', thPoints:'積分', thState:'狀態', thTime:'時間',
+    logout:'登出', confirmRedeem:'確定要換領「{name}」嗎？\n所需積分會即時凍結，等候老師批准。',
+    redeemSent:'已送出！剩餘可用 {n} 分', error:'出錯了', retry:'重試',
+    stPending:'待批核', stApproved:'已批准', stRejected:'已拒絕', langLabel:'🌐'
+  },
+  en: {
+    appTitle:'Reward Shop', appSub:'Mathematics Reward Scheme 2026-2027',
+    login:'Please sign in', loginHint:'Sign in with your school Google account', loginMail:'(@qts.edu.hk)',
+    firstTime:'First time? Enter your class and class number. Your teacher will approve your account.',
+    bindTitle:'First time — confirm your identity', bindDesc:'Enter your class and class number (seat no.)<br>Example: Class 4C, seat 5 → choose "4C" and type "5"',
+    classNoPh:'Class no.', sendApply:'Send request', yourEmail:'Your login email:',
+    bindNote:'Your teacher will check and approve it. Once approved, the link is permanent.', needClsNo:'Please enter your class number', sentWait:'Sent! Waiting for teacher approval',
+    pendingTitle:'Waiting for teacher approval', pendingDesc:'You applied to link Class {cls} no. {no} ({chi}).<br>You can view your points and rewards once your teacher approves.',
+    refresh:'Refresh', myPoints:'My points:', frozenNote:'🔒 On hold (pending):', avail:'Available:', pts:'pts',
+    thIcon:'Icon', thItem:'Reward', thCost:'Points', thStock:'Stock', thLimit:'Limit', thRedeem:'Redeem',
+    unlim:'Unlimited', gain1:'Get x1', notEnough:'Not enough points', soldOut:'Out of stock',
+    perWeek:'per week', perMonth:'per month', perEvent:'per event', limitFmt:'{t}, {n} time(s)',
+    myHistory:'📜 My redemption history', thGift:'Reward', thPoints:'Points', thState:'Status', thTime:'Time',
+    logout:'Log out', confirmRedeem:'Redeem "{name}"?\nThe points will be on hold until your teacher approves.',
+    redeemSent:'Sent! Available points: {n}', error:'Something went wrong', retry:'Retry',
+    stPending:'Pending', stApproved:'Approved', stRejected:'Rejected', langLabel:'🌐'
+  }
+};
+function T(k, o){
+  let s = (I18N[LANG] && I18N[LANG][k]) || (I18N.zh[k] || k);
+  if (o) Object.keys(o).forEach(function(x){ s = s.split('{' + x + '}').join(o[x]); });
+  return s;
+}
+/* 後端中文錯誤 → 英文（學生用） */
+const ERR_EN = [
+  [/^未登入/, 'Not signed in'],
+  [/登入憑證無效/, 'Session expired, please sign in again'],
+  [/^帳戶未綁定/, 'Your account is not linked yet'],
+  [/^帳戶未經老師批准/, 'Your account is not approved yet'],
+  [/^帳戶已停用/, 'Your account is disabled'],
+  [/^禮物不存在/, 'Reward not found'],
+  [/已有待批核的申請/, 'You already have a pending request'],
+  [/存貨不足/, 'Out of stock'],
+  [/^積分不足（可用 (\d+)，需要 (\d+)）/, 'Not enough points (available $1, need $2)'],
+  [/^沒有管理權限/, 'No admin permission'],
+  [/^找不到 (\S+) 班 (\d+) 號/, 'Class $1 no. $2 not found'],
+  [/^找不到對應學生/, 'Student not found'],
+  [/^未知指令/, 'Unknown command']
+];
+function terr(msg){
+  const s = String(msg == null ? '' : msg);
+  if (LANG !== 'en') return s;
+  for (let i = 0; i < ERR_EN.length; i++) if (ERR_EN[i][0].test(s)) return s.replace(ERR_EN[i][0], ERR_EN[i][1]);
+  return s;
+}
+function gloss(k){ return LANG === 'en' ? '' : k; }
+function setLang(l){ LANG = l; try { localStorage.setItem('lang', l); } catch(e){} boot(); }
+function langSwitch(){
+  return '<div class="langbar">'
+    + '<button class="btn btnS ' + (LANG === 'zh' ? 'btn3' : '') + '" onclick="setLang(\'zh\')">中文</button>'
+    + '<button class="btn btnS ' + (LANG === 'en' ? 'btn3' : '') + '" onclick="setLang(\'en\')">English</button></div>';
+}
+function iconHtml(g, size){
+  const s = size || 42;
+  if (g && g.img) return '<img class="gimg" style="width:' + s + 'px;height:' + s + 'px" src="' + g.img + '">';
+  return '<span class="ico">' + esc((g && g.icon) || '🎁') + '</span>';
+}
+function gName(g){ return (LANG === 'en' && g.nameEn) ? g.nameEn : g.name; }
+function gNote(g){ return (LANG === 'en' && g.noteEn) ? g.noteEn : (g.note || ''); }
+function stateTxt(s){ return s === '已批准' ? T('stApproved') : (s === '已拒絕' ? T('stRejected') : (s === '待批核' ? T('stPending') : s)); }
+function limitTxt(g){
+  const t = g.limitType === '每月' ? T('perMonth') : (g.limitType === '活動' ? T('perEvent') : T('perWeek'));
+  return T('limitFmt', { t: t, n: g.limitN });
+}
+/* 換領紀錄內的禮物名（存於後端為中文）→ 英文模式時對照現有禮物表 */
+function histName(name){
+  if (LANG !== 'en') return name;
+  const hit = (GIFTS || []).filter(function(g){ return g.name === name; })[0];
+  return (hit && hit.nameEn) ? hit.nameEn : name;
+}
 
 /* ================= 狀態 ================= */
 let IDT = sessionStorage.getItem('idtoken') || '';
@@ -92,20 +199,21 @@ async function api(action, payload){
   const body = Object.assign({ action, token: IDT }, payload || {});
   const r = await fetch(API, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) });
   const j = await r.json();
-  if (!j.ok) throw new Error(j.error || '發生錯誤');
+  if (!j.ok) throw new Error(terr(j.error || '發生錯誤'));
   return j.data;
 }
-function shell(inner){
-  $('#app').innerHTML = '<div class="card"><div class="logo"><b>獎勵兌換所</b><span>數學科獎勵計劃 2026-2027</span></div>' + inner + '</div>';
+function shell(inner, withLang){
+  $('#app').innerHTML = '<div class="card"><div class="logo"><b>' + T('appTitle') + '</b><span>' + T('appSub') + '</span></div>'
+    + (withLang ? langSwitch() : '') + inner + '</div>';
 }
 
 /* ================= 登入 ================= */
 function renderLogin(){
-  shell('<div class="center"><h2>請先登入</h2><p>使用你的校內 Google 帳號登入<br>（@qts.edu.hk）</p>'
+  shell('<div class="center"><h2>' + T('login') + '</h2><p>' + T('loginHint') + '<br>' + T('loginMail') + '</p>'
     + '<div id="gbtn"></div>'
-    + '<div class="hint">首次登入需要輸入班別及班號，老師批准後即可使用。</div></div>');
+    + '<div class="hint">' + T('firstTime') + '</div></div>', true);
   google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredential });
-  google.accounts.id.renderButton($('#gbtn'), { theme:'outline', size:'large', text:'signin_with', locale:'zh_TW', width:280 });
+  google.accounts.id.renderButton($('#gbtn'), { theme:'outline', size:'large', text:'signin_with', locale: LANG === 'en' ? 'en' : 'zh_TW', width:280 });
 }
 function onCredential(res){
   IDT = res.credential; sessionStorage.setItem('idtoken', IDT);
@@ -125,31 +233,32 @@ async function boot(){
     renderStudent(reqs);
   } catch (e) {
     if (String(e.message||'').indexOf('登入') >= 0) { sessionStorage.removeItem('idtoken'); IDT=''; renderLogin(); return; }
-    shell('<div class="center"><h2>出錯了</h2><p>' + esc(e.message) + '</p><button class="btn" onclick="boot()">重試</button></div>');
+    shell('<div class="center"><h2>' + T('error') + '</h2><p>' + esc(e.message) + '</p><button class="btn" onclick="boot()">' + T('retry') + '</button></div>', true);
   }
 }
 
 /* ================= 學生：綁定 ================= */
 function renderBind(){
   const classes = ['2A','2B','2C','2D','3A','3B','3C','3D','4A','4B','4C','4D','5A','5B','5C','5D','6A','6B','6C','6D'];
-  shell('<div class="center"><h2>首次使用：確認身分</h2>'
-    + '<p>請輸入你的班別及班號（座位號）<br>例：4C 班 5 號 → 選「4C」、輸入「5」</p>'
+  shell('<div class="center"><h2>' + T('bindTitle') + '</h2>'
+    + '<p>' + T('bindDesc') + '</p>'
     + '<div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;align-items:center">'
     + '<select class="inp" id="cls">' + classes.map(c=>'<option>'+c+'</option>').join('') + '</select>'
-    + '<input class="inp" id="no" type="number" min="1" max="45" placeholder="班號">'
+    + '<input class="inp" id="no" type="number" min="1" max="45" placeholder="' + T('classNoPh') + '">'
     + '</div>'
-    + '<div style="margin-top:18px"><button class="btn btn3" onclick="doBind()">送出申請</button></div>'
-    + '<div class="hint">你的登入電郵：' + esc(ME.email) + '<br>送出後老師會核對並批准，一經批准即永久綁定。</div></div>');
+    + '<div style="margin-top:18px"><button class="btn btn3" onclick="doBind()">' + T('sendApply') + '</button></div>'
+    + '<div class="hint">' + T('yourEmail') + esc(ME.email) + '<br>' + T('bindNote') + '</div></div>', true);
 }
 async function doBind(){
   const cls = $('#cls').value, no = $('#no').value;
-  if (!no) { toast('請輸入班號', true); return; }
-  try { await api('bind', { cls, no }); toast('已送出，等候老師批准'); setTimeout(boot, 800); }
+  if (!no) { toast(T('needClsNo'), true); return; }
+  try { await api('bind', { cls, no }); toast(T('sentWait')); setTimeout(boot, 800); }
   catch (e) { toast(e.message, true); }
 }
 function renderPending(){
-  shell('<div class="center"><h2>等候老師批准</h2><p>你已申請綁定 ' + esc(ME.cls) + ' 班 ' + esc(ME.no) + ' 號（' + esc(ME.chi||'') + '）<br>老師批准後即可查看積分及換領禮物。</p>'
-    + '<button class="btn" onclick="boot()">重新整理</button></div>');
+  shell('<div class="center"><h2>' + T('pendingTitle') + '</h2><p>'
+    + T('pendingDesc', { cls: esc(ME.cls), no: esc(ME.no), chi: esc(ME.chi||'') }) + '</p>'
+    + '<button class="btn" onclick="boot()">' + T('refresh') + '</button></div>', true);
 }
 
 /* ================= 學生：兌換所 ================= */
@@ -158,31 +267,33 @@ function renderStudent(reqs){
   let rows = '';
   GIFTS.forEach(g=>{
     const can = avail >= g.cost && g.stock > 0;
-    const stockTxt = g.stock >= 999 ? '無限' : g.stock;
-    rows += '<tr><td class="ico">' + esc(g.icon) + '</td>'
-      + '<td class="item">' + esc(g.name) + (g.note ? '<small>' + esc(g.note) + '</small>' : '<small>獲得 x1</small>') + '</td>'
+    const stockTxt = g.stock >= 999 ? T('unlim') : g.stock;
+    const nm = gName(g), nt = gNote(g);
+    rows += '<tr><td>' + iconHtml(g) + '</td>'
+      + '<td class="item">' + esc(nm) + (nt ? '<small>' + esc(nt) + '</small>' : '<small>' + T('gain1') + '</small>') + '</td>'
       + '<td class="cost">' + g.cost + '</td><td class="stock">' + stockTxt + '</td>'
-      + '<td class="limit">' + esc(g.limitType) + '限 ' + g.limitN + ' 次</td>'
-      + '<td>' + (can ? '<button class="btn" onclick="redeem(' + g.row + ',\'' + esc(g.name) + '\')">兌換</button>'
-                     : '<button class="btn dis" disabled>' + (g.stock > 0 ? '積分不足' : '已換完') + '</button>') + '</td></tr>';
+      + '<td class="limit">' + limitTxt(g) + '</td>'
+      + '<td>' + (can ? '<button class="btn" onclick="redeem(' + g.row + ',\'' + esc(nm) + '\')">' + T('thRedeem') + '</button>'
+                     : '<button class="btn dis" disabled>' + (g.stock > 0 ? T('notEnough') : T('soldOut')) + '</button>') + '</td></tr>';
   });
   let rh = '';
   (reqs||[]).forEach(r=>{
     const c = r.state === '已批准' ? '#2f8f3f' : (r.state === '已拒絕' ? '#c0392b' : '#d0296a');
-    rh += '<tr><td style="text-align:left;padding-left:12px">' + esc(r.gift) + '</td><td>' + r.cost + '</td>'
-        + '<td style="color:' + c + ';font-weight:900">' + esc(r.state) + '</td><td>' + esc(r.time) + '</td></tr>';
+    rh += '<tr><td style="text-align:left;padding-left:12px">' + esc(histName(r.gift)) + '</td><td>' + r.cost + '</td>'
+        + '<td style="color:' + c + ';font-weight:900">' + esc(stateTxt(r.state)) + '</td><td>' + esc(r.time) + '</td></tr>';
   });
-  shell('<div class="bar"><div class="pill">我的積分：<em>' + s.points + '</em> ⭐</div>'
-    + '<div class="nick">' + esc(s.cls) + ' (' + s.no + ') ' + esc(s.chi) + '</div></div>'
-    + (s.frozen > 0 ? '<div class="hint" style="margin-bottom:10px">🔒 凍結中（待批核）：' + s.frozen + ' 分　｜　可用：<b>' + avail + '</b> 分</div>' : '')
-    + '<div class="tblwrap"><table><thead><tr><th>圖示</th><th>兌換物品</th><th>所需積分</th><th>存貨</th><th>兌換限制</th><th>兌換</th></tr></thead><tbody>'
+  const who = (LANG === 'en' && s.eng) ? s.eng : s.chi;
+  shell('<div class="bar"><div class="pill">' + T('myPoints') + '<em>' + s.points + '</em> ⭐</div>'
+    + '<div class="nick">' + esc(s.cls) + ' (' + s.no + ') ' + esc(who) + '</div></div>'
+    + (s.frozen > 0 ? '<div class="hint" style="margin-bottom:10px">' + T('frozenNote') + s.frozen + ' ' + T('pts') + '　｜　' + T('avail') + '<b>' + avail + '</b> ' + T('pts') + '</div>' : '')
+    + '<div class="tblwrap"><table><thead><tr><th>' + T('thIcon') + '</th><th>' + T('thItem') + '</th><th>' + T('thCost') + '</th><th>' + T('thStock') + '</th><th>' + T('thLimit') + '</th><th>' + T('thRedeem') + '</th></tr></thead><tbody>'
     + rows + '</tbody></table></div>'
-    + (rh ? '<div class="sechd">📜 我的換領紀錄</div><div class="tblwrap"><table><thead><tr><th style="text-align:left;padding-left:12px">禮物</th><th>積分</th><th>狀態</th><th>時間</th></tr></thead><tbody>' + rh + '</tbody></table></div>' : '')
-    + '<div class="foot"><button class="btn btn2" onclick="logout()">登出</button></div>');
+    + (rh ? '<div class="sechd">' + T('myHistory') + '</div><div class="tblwrap"><table><thead><tr><th style="text-align:left;padding-left:12px">' + T('thGift') + '</th><th>' + T('thPoints') + '</th><th>' + T('thState') + '</th><th>' + T('thTime') + '</th></tr></thead><tbody>' + rh + '</tbody></table></div>' : '')
+    + '<div class="foot"><button class="btn btn2" onclick="logout()">' + T('logout') + '</button></div>', true);
 }
 async function redeem(row, name){
-  if (!confirm('確定要換領「' + name + '」嗎？\n所需積分會即時凍結，等候老師批准。')) return;
-  try { const r = await api('redeem', { giftRow: row }); toast('已送出！剩餘可用 ' + r.available + ' 分'); setTimeout(boot, 1200); }
+  if (!confirm(T('confirmRedeem', { name: name }))) return;
+  try { const r = await api('redeem', { giftRow: row }); toast(T('redeemSent', { n: r.available })); setTimeout(boot, 1200); }
   catch (e) { toast(e.message, true); }
 }
 function logout(){ sessionStorage.removeItem('idtoken'); IDT=''; if (window.google) google.accounts.id.disableAutoSelect(); renderLogin(); }
@@ -208,7 +319,7 @@ function renderAdmin(){
     + '<div class="tabs">'
     + tabBtn('students','📋 學生總表') + tabBtn('pending','🎁 待批核 (' + (pending.length + binds.length) + ')')
     + tabBtn('gifts','🎀 禮物清單') + tabBtn('logs','📜 加分紀錄') + '</div><div id="tabc"></div>'
-    + '<div class="foot"><button class="btn btn3" onclick="exportXlsx()">📊 匯出 Excel</button><button class="btn btn2" onclick="backup()">匯出 CSV</button><button class="btn" onclick="boot()">重新整理</button></div>';
+    + '<div class="foot"><button class="btn btn3" onclick="exportXlsx()">📊 匯出 Excel</button><button class="btn btn2" onclick="backup()">匯出 CSV</button><button class="btn btn2" onclick="upgradeSheet()">🔧 升級表格</button><button class="btn" onclick="boot()">重新整理</button></div>';
   shell(html);
   renderTab();
 }
@@ -246,7 +357,9 @@ function renderTab(){
   } else if (TAB === 'gifts') {
     let h = '<div class="tblwrap"><table><thead><tr><th>圖示</th><th>名稱</th><th>積分</th><th>存貨</th><th>上限</th><th>上架</th><th>操作</th></tr></thead><tbody>';
     ADMIN.gifts.forEach(g=>{
-      h += '<tr><td class="ico">' + esc(g.icon) + '</td><td style="text-align:left">' + esc(g.name) + '</td><td class="cost">' + g.cost + '</td>'
+      h += '<tr><td>' + iconHtml(g, 40) + '</td><td style="text-align:left">' + esc(g.name)
+        + (g.nameEn ? '<div style="font-size:11px;color:#a3803f">' + esc(g.nameEn) + '</div>' : '<div style="font-size:11px;color:#c0392b">（未有英文名）</div>')
+        + '</td><td class="cost">' + g.cost + '</td>'
         + '<td>' + (g.stock >= 999 ? '無限' : g.stock) + '</td><td style="font-size:12px">' + esc(g.limitType) + ' ' + g.limitN + ' 次</td>'
         + '<td>' + (g.on === '是' || g.on === true ? '✅' : '—') + '</td>'
         + '<td><button class="btn btnS" onclick="editGift(' + g.row + ')">編輯</button></td></tr>';
@@ -281,16 +394,131 @@ async function approveBind(cls, no, ok){
     await loadAdmin(); renderAdmin();
   } catch (e) { toast(e.message, true); }
 }
-async function editGift(row){
-  const g = row ? ADMIN.gifts.find(x=>x.row === row) : { icon:'🎁', name:'', cost:0, stock:999, limitType:'每週', limitN:1, on:'是', note:'' };
-  const icon = prompt('圖示（emoji）', g.icon); if (icon === null) return;
-  const name = prompt('禮物名稱', g.name); if (name === null) return;
-  const cost = Number(prompt('所需積分', g.cost)); if (!cost) { toast('積分必須大於 0', true); return; }
-  const stock = Number(prompt('存貨（999 = 無限）', g.stock));
-  const limitType = prompt('上限類型（每週／每月／活動）', g.limitType) || '每週';
-  const limitN = Number(prompt('上限次數', g.limitN)) || 1;
-  const on = (prompt('是否上架？輸入 是 / 否', g.on === '是' || g.on === true ? '是' : '否') || '是') === '是';
-  try { await api('admin.saveGift', { gift:{ row, icon, name, cost, stock, limitType, limitN, on, note:g.note } }); toast('已儲存'); await loadAdmin(); renderAdmin(); }
+/* ====== 老師：禮物編輯（中文／英文 + 圖片上傳＋裁剪） ====== */
+let GE = null, CROP = null;
+function val(id){ const e = document.getElementById(id); return e ? e.value : ''; }
+function editGift(row){
+  const g = row ? (ADMIN.gifts.filter(x=>x.row === row)[0] || {}) : {};
+  GE = { row: row || 0, img: g.img || '',
+         icon: g.icon || '🎁', name: g.name || '', nameEn: g.nameEn || '',
+         cost: g.cost || 0, stock: (g.stock === undefined ? 999 : g.stock),
+         limitType: g.limitType || '每週', limitN: g.limitN || 1,
+         on: (g.on === '是' || g.on === true) ? '是' : '否', note: g.note || '', noteEn: g.noteEn || '' };
+  const opts = function(v, list){ return list.map(x=>'<option'+(x===v?' selected':'')+'>'+x+'</option>').join(''); };
+  const d = document.createElement('div'); d.id = 'gwrap';
+  d.innerHTML = '<div class="modal"><div class="mbox">'
+    + '<h3>🎀 ' + (row ? '編輯禮物' : '新增禮物') + '</h3>'
+    + '<div class="fld"><label>禮物圖片（可選；上載後會取代 emoji）</label>'
+    +   '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
+    +     '<div class="ipv" id="gPrev">' + (GE.img ? '<img src="' + GE.img + '">' : '未有圖片') + '</div>'
+    +     '<input type="file" id="gFile" accept="image/*" style="display:none" onchange="pickImage(this)">'
+    +     '<button class="btn btnS btn3" onclick="document.getElementById(\'gFile\').click()">📷 選擇圖片</button>'
+    +     '<button class="btn btnS btn2" onclick="clearImg()">移除圖片</button>'
+    +   '</div></div>'
+    + '<div class="fld"><label>圖示 emoji（冇圖片時顯示）</label><input id="gIcon" value="' + esc(GE.icon) + '"></div>'
+    + '<div class="fld"><label>禮物名稱（中文）</label><input id="gName" value="' + esc(GE.name) + '"></div>'
+    + '<div class="fld"><label>Reward name (English)　英文名稱</label><input id="gNameEn" value="' + esc(GE.nameEn) + '"></div>'
+    + '<div class="row2">'
+    +   '<div class="fld"><label>所需積分</label><input id="gCost" type="number" value="' + GE.cost + '"></div>'
+    +   '<div class="fld"><label>存貨（999 = 無限）</label><input id="gStock" type="number" value="' + GE.stock + '"></div>'
+    + '</div><div class="row2">'
+    +   '<div class="fld"><label>上限類型</label><select id="gLt">' + opts(GE.limitType, ['每週','每月','活動']) + '</select></div>'
+    +   '<div class="fld"><label>上限次數</label><input id="gLn" type="number" value="' + GE.limitN + '"></div>'
+    + '</div>'
+    + '<div class="fld"><label>上架</label><select id="gOn">' + opts(GE.on, ['是','否']) + '</select></div>'
+    + '<div class="fld"><label>備註（中文）</label><input id="gNote" value="' + esc(GE.note) + '"></div>'
+    + '<div class="fld"><label>Note (English)　英文備註</label><input id="gNoteEn" value="' + esc(GE.noteEn) + '"></div>'
+    + '<div class="foot"><div><button class="btn btn3" onclick="saveGiftForm()">儲存</button> '
+    + '<button class="btn" onclick="closeGift()">取消</button></div></div>'
+    + '<div class="hint" style="margin-top:8px">英文欄位只會喺學生選 English 時顯示；留空就會顯示中文。</div>'
+    + '</div></div>';
+  document.body.appendChild(d);
+}
+function closeGift(){ const d = document.getElementById('gwrap'); if (d) d.remove(); GE = null; }
+function clearImg(){ if (!GE) return; GE.img = ''; const p = document.getElementById('gPrev'); if (p) p.innerHTML = '未有圖片'; }
+function pickImage(input){
+  const f = input.files && input.files[0]; if (!f) return;
+  const fr = new FileReader();
+  fr.onload = function(e){
+    const im = new Image();
+    im.onload = function(){ CROP = { im: im, zoom: 1, x: 0, y: 0 }; openCrop(); };
+    im.src = e.target.result;
+  };
+  fr.readAsDataURL(f);
+  input.value = '';
+}
+function openCrop(){
+  const d = document.createElement('div'); d.id = 'cwrap';
+  d.innerHTML = '<div class="modal"><div class="mbox" style="max-width:400px">'
+    + '<h3>✂️ 裁剪圖片</h3>'
+    + '<div class="cropbox"><canvas id="ccv" width="200" height="200"></canvas></div>'
+    + '<div class="fld"><label>縮放</label><input type="range" id="czoom" min="100" max="400" value="100"></div>'
+    + '<div class="hint">用滑鼠／手指拖動圖片可移動位置，拉動拉桿可放大縮小。</div>'
+    + '<div class="foot"><div><button class="btn btn3" onclick="applyCrop()">確定</button> '
+    + '<button class="btn" onclick="closeCrop()">取消</button></div></div>'
+    + '</div></div>';
+  document.body.appendChild(d);
+  const cv = document.getElementById('ccv');
+  let drag = null;
+  cv.addEventListener('pointerdown', function(e){ drag = { x: e.clientX, y: e.clientY, ox: CROP.x, oy: CROP.y }; try { cv.setPointerCapture(e.pointerId); } catch(err){} });
+  cv.addEventListener('pointermove', function(e){ if (!drag) return; CROP.x = drag.ox + (e.clientX - drag.x); CROP.y = drag.oy + (e.clientY - drag.y); paintCrop(); });
+  cv.addEventListener('pointerup', function(){ drag = null; });
+  cv.addEventListener('pointercancel', function(){ drag = null; });
+  document.getElementById('czoom').addEventListener('input', function(e){ CROP.zoom = Number(e.target.value) / 100; paintCrop(); });
+  paintCrop();
+}
+function cropGeom(S){
+  const im = CROP.im;
+  const base = Math.max(S / im.width, S / im.height) * CROP.zoom;
+  const w = im.width * base, h = im.height * base;
+  let x = (S - w) / 2 + CROP.x, y = (S - h) / 2 + CROP.y;
+  x = Math.min(0, Math.max(S - w, x));
+  y = Math.min(0, Math.max(S - h, y));
+  return { x: x, y: y, w: w, h: h };
+}
+function paintCrop(){
+  const cv = document.getElementById('ccv'); if (!cv || !CROP) return;
+  const S = 200; cv.width = S; cv.height = S;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, S, S);
+  const g = cropGeom(S);
+  ctx.drawImage(CROP.im, g.x, g.y, g.w, g.h);
+}
+function applyCrop(){
+  if (!CROP) return;
+  const S = 160;
+  const cv = document.createElement('canvas'); cv.width = S; cv.height = S;
+  const ctx = cv.getContext('2d');
+  ctx.fillStyle = '#ffffff'; ctx.fillRect(0, 0, S, S);
+  const g = cropGeom(S);
+  ctx.drawImage(CROP.im, g.x, g.y, g.w, g.h);
+  const data = cv.toDataURL('image/jpeg', 0.72);
+  GE.img = data;
+  const p = document.getElementById('gPrev'); if (p) p.innerHTML = '<img src="' + data + '">';
+  closeCrop();
+}
+function closeCrop(){ const d = document.getElementById('cwrap'); if (d) d.remove(); CROP = null; }
+async function saveGiftForm(){
+  if (!GE) return;
+  const name = val('gName');
+  if (!name) { toast('請輸入禮物名稱', true); return; }
+  const gift = { row: GE.row || 0, icon: val('gIcon'), name: name, nameEn: val('gNameEn'),
+    cost: Number(val('gCost')) || 0, stock: Number(val('gStock')) || 0,
+    limitType: val('gLt'), limitN: Number(val('gLn')) || 1,
+    on: val('gOn') === '是', note: val('gNote'), noteEn: val('gNoteEn') };
+  const img = GE.img || '';
+  try {
+    const r = await api('admin.saveGift', { gift: gift });
+    const before = (ADMIN.gifts.filter(x=>x.row === r.row)[0] || {}).img || '';
+    if (img !== before) {
+      if (img) await api('admin.saveImg', { row: r.row, data: img });
+      else if (before) await api('admin.saveImg', { row: r.row, data: '' });
+    }
+    toast('已儲存'); closeGift(); await loadAdmin(); renderAdmin();
+  } catch (e) { toast(e.message, true); }
+}
+async function upgradeSheet(){
+  try { const r = await api('admin.upgrade', {}); toast('表格欄位：' + (r.headers || []).join('、')); await loadAdmin(); renderAdmin(); }
   catch (e) { toast(e.message, true); }
 }
 /* ================= XLSX 產生器（純前端、無外部依賴） =================
