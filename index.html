@@ -159,7 +159,7 @@ function terr(msg){
   return s;
 }
 function gloss(k){ return LANG === 'en' ? '' : k; }
-function setLang(l){ LANG = l; try { localStorage.setItem('lang', l); } catch(e){} boot(); }
+function setLang(l){ LANG = l; try { localStorage.setItem('lang', l); } catch(e){} if (PREVIEW) { renderStudent(PREVIEW.reqs); } else { boot(); } }
 function langSwitch(){
   return '<div class="langbar">'
     + '<button class="btn btnS ' + (LANG === 'zh' ? 'btn3' : '') + '" onclick="setLang(\'zh\')">中文</button>'
@@ -186,7 +186,7 @@ function histName(name){
 
 /* ================= 狀態 ================= */
 let IDT = sessionStorage.getItem('idtoken') || '';
-let ME = null, GIFTS = [], ADMIN = null, TAB = 'students';
+let ME = null, GIFTS = [], ADMIN = null, TAB = 'students', PREVIEW = null;
 
 /* ================= 工具 ================= */
 const $ = s => document.querySelector(s);
@@ -264,9 +264,10 @@ function renderPending(){
 /* ================= 學生：兌換所 ================= */
 function renderStudent(reqs){
   const s = ME.student, avail = ME.available;
+  const isPrev = !!(ME && ME.preview);
   let rows = '';
   GIFTS.forEach(g=>{
-    const can = avail >= g.cost && g.stock > 0;
+    const can = avail >= g.cost && g.stock > 0 && !isPrev;
     const stockTxt = g.stock >= 999 ? T('unlim') : g.stock;
     const nm = gName(g), nt = gNote(g);
     rows += '<tr><td>' + iconHtml(g) + '</td>'
@@ -274,7 +275,7 @@ function renderStudent(reqs){
       + '<td class="cost">' + g.cost + '</td><td class="stock">' + stockTxt + '</td>'
       + '<td class="limit">' + limitTxt(g) + '</td>'
       + '<td>' + (can ? '<button class="btn" onclick="redeem(' + g.row + ',\'' + esc(nm) + '\')">' + T('thRedeem') + '</button>'
-                     : '<button class="btn dis" disabled>' + (g.stock > 0 ? T('notEnough') : T('soldOut')) + '</button>') + '</td></tr>';
+                     : '<button class="btn dis" disabled>' + (isPrev ? '👀 預覽' : (g.stock > 0 ? T('notEnough') : T('soldOut'))) + '</button>') + '</td></tr>';
   });
   let rh = '';
   (reqs||[]).forEach(r=>{
@@ -285,12 +286,27 @@ function renderStudent(reqs){
   const who = (LANG === 'en' && s.eng) ? s.eng : s.chi;
   shell('<div class="bar"><div class="pill">' + T('myPoints') + '<em>' + s.points + '</em> ⭐</div>'
     + '<div class="nick">' + esc(s.cls) + ' (' + s.no + ') ' + esc(who) + '</div></div>'
+    + (isPrev ? '<div class="hint" style="margin:6px 0 12px;background:#fff6d8;border:3px dashed #e0b060;border-radius:12px;padding:10px">👀 <b>預覽模式（唯讀）</b>——你正以老師身分查看 ' + esc(s.cls) + ' ' + s.no + ' 嘅學生版面。可切換語言睇英文版；學生資料唔會被你改動。<button class="btn btnS btn3" style="margin-left:8px" onclick="exitPreview()">返回管理台</button></div>' : '')
     + (s.frozen > 0 ? '<div class="hint" style="margin-bottom:10px">' + T('frozenNote') + s.frozen + ' ' + T('pts') + '　｜　' + T('avail') + '<b>' + avail + '</b> ' + T('pts') + '</div>' : '')
     + '<div class="tblwrap"><table><thead><tr><th>' + T('thIcon') + '</th><th>' + T('thItem') + '</th><th>' + T('thCost') + '</th><th>' + T('thStock') + '</th><th>' + T('thLimit') + '</th><th>' + T('thRedeem') + '</th></tr></thead><tbody>'
     + rows + '</tbody></table></div>'
     + (rh ? '<div class="sechd">' + T('myHistory') + '</div><div class="tblwrap"><table><thead><tr><th style="text-align:left;padding-left:12px">' + T('thGift') + '</th><th>' + T('thPoints') + '</th><th>' + T('thState') + '</th><th>' + T('thTime') + '</th></tr></thead><tbody>' + rh + '</tbody></table></div>' : '')
     + '<div class="foot"><button class="btn btn2" onclick="logout()">' + T('logout') + '</button></div>', true);
 }
+function previewStudent(){
+  const cls = String(prompt('👀 預覽學生版面\n\n請輸入班別（例：5D）：', '') || '').trim().toUpperCase();
+  if (!cls) return;
+  const no = Number(prompt('請輸入班號（例：1）：', ''));
+  if (!no) return;
+  const st = (ADMIN.students || []).filter(s => String(s.cls).toUpperCase() === cls && Number(s.no) === no)[0];
+  if (!st) { toast('找不到 ' + cls + ' 班 ' + no + ' 號', true); return; }
+  const reqs = (ADMIN.requests || []).filter(r => String(r.cls).toUpperCase() === cls && Number(r.no) === no);
+  PREVIEW = { reqs: reqs };
+  ME = { student: st, available: (st.points || 0) - (st.frozen || 0), preview: true };
+  GIFTS = ADMIN.gifts;
+  renderStudent(reqs);
+}
+function exitPreview(){ PREVIEW = null; ME = null; boot(); }
 async function redeem(row, name){
   if (!confirm(T('confirmRedeem', { name: name }))) return;
   try { const r = await api('redeem', { giftRow: row }); toast(T('redeemSent', { n: r.available })); setTimeout(boot, 1200); }
@@ -318,7 +334,8 @@ function renderAdmin(){
     + '<button class="btn btn2 btnS" onclick="logout()">登出</button></div>' + st
     + '<div class="tabs">'
     + tabBtn('students','📋 學生總表') + tabBtn('pending','🎁 待批核 (' + (pending.length + binds.length) + ')')
-    + tabBtn('gifts','🎀 禮物清單') + tabBtn('logs','📜 加分紀錄') + '</div><div id="tabc"></div>'
+    + tabBtn('gifts','🎀 禮物清單') + tabBtn('logs','📜 加分紀錄') + '</div>'
+    + '<div style="margin:-2px 0 12px"><button class="btn btn3 btnS" onclick="previewStudent()">👀 預覽學生版面</button></div><div id="tabc"></div>'
     + '<div class="foot"><button class="btn btn3" onclick="exportXlsx()">📊 匯出 Excel</button><button class="btn btn2" onclick="backup()">匯出 CSV</button><button class="btn btn2" onclick="upgradeSheet()">🔧 升級表格</button><button class="btn" onclick="boot()">重新整理</button></div>';
   shell(html);
   renderTab();
