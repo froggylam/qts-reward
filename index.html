@@ -83,6 +83,9 @@ select.inp{width:auto;text-align:left}
 .cropbox{width:200px;height:200px;margin:8px auto;border:4px solid #c98b2e;border-radius:16px;overflow:hidden;background:#fff;touch-action:none;cursor:move;position:relative}
 .cropbox canvas{display:block;width:200px;height:200px}
 </style>
+<link rel="preconnect" href="https://accounts.google.com">
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
@@ -185,7 +188,7 @@ function histName(name){
 }
 
 /* ================= 狀態 ================= */
-let IDT = sessionStorage.getItem('idtoken') || '';
+let IDT = localStorage.getItem('sess') || sessionStorage.getItem('idtoken') || '';
 let ME = null, GIFTS = [], ADMIN = null, TAB = 'students', PREVIEW = null;
 
 /* ================= 工具 ================= */
@@ -215,8 +218,13 @@ function renderLogin(){
   google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredential });
   google.accounts.id.renderButton($('#gbtn'), { theme:'outline', size:'large', text:'signin_with', locale: LANG === 'en' ? 'en' : 'zh_TW', width:280 });
 }
-function onCredential(res){
-  IDT = res.credential; sessionStorage.setItem('idtoken', IDT);
+async function onCredential(res){
+  IDT = res.credential;
+  try {                                   /* 用 Google 憑證換取本系統長效 session */
+    const r = await api('login');
+    IDT = r.session;
+    try { localStorage.setItem('sess', IDT); sessionStorage.removeItem('idtoken'); } catch (e) {}
+  } catch (e) { try { sessionStorage.setItem('idtoken', res.credential); } catch (e2) {} }
   boot();
 }
 
@@ -224,13 +232,19 @@ function onCredential(res){
 async function boot(){
   try {
     if (!IDT || CLIENT_ID.indexOf('PASTE') === 0) { renderLogin(); return; }
-    ME = await api('me');
-    if (ME.admin) { await loadAdmin(); renderAdmin(); return; }
+    const h = await api('home');          /* 一次過攞齊（原本要 2–3 次來回）*/
+    ME = h.me;
+    if (IDT.indexOf('.') >= 0) {          /* 舊式 Google 憑證 → 靜靜升級成長效 session */
+      try { const r = await api('login'); IDT = r.session; localStorage.setItem('sess', IDT); sessionStorage.removeItem('idtoken'); } catch (e) {}
+    }
+    if (ME.admin) {
+      if (h.admin) { ADMIN = h.admin; GIFTS = ADMIN.gifts; } else { await loadAdmin(); }
+      renderAdmin(); return;
+    }
     if (ME.pending) { renderPending(); return; }
     if (!ME.bound) { renderBind(); return; }
-    GIFTS = await api('gifts');
-    const reqs = await api('myRequests');
-    renderStudent(reqs);
+    GIFTS = h.gifts || [];
+    renderStudent(h.reqs || []);
   } catch (e) {
     if (String(e.message||'').indexOf('登入') >= 0) { sessionStorage.removeItem('idtoken'); IDT=''; renderLogin(); return; }
     shell('<div class="center"><h2>' + T('error') + '</h2><p>' + esc(e.message) + '</p><button class="btn" onclick="boot()">' + T('retry') + '</button></div>', true);
@@ -291,7 +305,9 @@ function renderStudent(reqs){
     + '<div class="tblwrap"><table><thead><tr><th>' + T('thIcon') + '</th><th>' + T('thItem') + '</th><th>' + T('thCost') + '</th><th>' + T('thStock') + '</th><th>' + T('thLimit') + '</th><th>' + T('thRedeem') + '</th></tr></thead><tbody>'
     + rows + '</tbody></table></div>'
     + (rh ? '<div class="sechd">' + T('myHistory') + '</div><div class="tblwrap"><table><thead><tr><th style="text-align:left;padding-left:12px">' + T('thGift') + '</th><th>' + T('thPoints') + '</th><th>' + T('thState') + '</th><th>' + T('thTime') + '</th></tr></thead><tbody>' + rh + '</tbody></table></div>' : '')
-    + '<div class="foot"><button class="btn btn2" onclick="logout()">' + T('logout') + '</button></div>', true);
+    + '<div class="foot">' + (isPrev
+        ? '<button class="btn btn2" onclick="exitPreview()">↩️ 返回管理台</button>'
+        : '<button class="btn btn2" onclick="logout()">' + T('logout') + '</button>') + '</div>', true);
 }
 function previewStudent(){
   const cls = String(prompt('👀 預覽學生版面\n\n請輸入班別（例：5D）：', '') || '').trim().toUpperCase();
@@ -312,7 +328,13 @@ async function redeem(row, name){
   try { const r = await api('redeem', { giftRow: row }); toast(T('redeemSent', { n: r.available })); setTimeout(boot, 1200); }
   catch (e) { toast(e.message, true); }
 }
-function logout(){ sessionStorage.removeItem('idtoken'); IDT=''; if (window.google) google.accounts.id.disableAutoSelect(); renderLogin(); }
+async function logout(){
+  try { await api('logout', { token: IDT }); } catch (e) {}
+  try { localStorage.removeItem('sess'); sessionStorage.removeItem('idtoken'); } catch (e) {}
+  IDT = '';
+  if (window.google) google.accounts.id.disableAutoSelect();
+  renderLogin();
+}
 
 /* ================= 老師：管理台 ================= */
 async function loadAdmin(){
@@ -381,7 +403,7 @@ function renderTab(){
         + '<td>' + (g.on === '是' || g.on === true ? '✅' : '—') + '</td>'
         + '<td><button class="btn btnS" onclick="editGift(' + g.row + ')">編輯</button></td></tr>';
     });
-    c.innerHTML = h + '</tbody></table></div><div style="margin-top:12px"><button class="btn btn3" onclick="editGift(0)">+ 新增禮物</button></div>';
+    c.innerHTML = h + '</tbody></table></div><div style="margin-top:12px"><button class="btn btn3" onclick="editGift(0)">+ 新增禮物</button> <button class="btn btn2" onclick="autoTranslate()">🔤 自動翻譯全部</button></div>';
   } else {
     let h = '<div class="tblwrap"><table><thead><tr><th>時間</th><th>姓名</th><th>班別</th><th>分數</th><th>原因</th></tr></thead><tbody>';
     (ADMIN.logs||[]).forEach(l=>{
@@ -447,7 +469,7 @@ function editGift(row){
     + '<div class="fld"><label>Note (English)　英文備註</label><input id="gNoteEn" value="' + esc(GE.noteEn) + '"></div>'
     + '<div class="foot"><div><button class="btn btn3" onclick="saveGiftForm()">儲存</button> '
     + '<button class="btn" onclick="closeGift()">取消</button></div></div>'
-    + '<div class="hint" style="margin-top:8px">英文欄位只會喺學生選 English 時顯示；留空就會顯示中文。</div>'
+    + '<div class="hint" style="margin-top:8px">💡 英文欄位<b>留空 = 系統自動翻譯</b>（你只需要輸入中文！）如需指定英文，直接填寫即可覆蓋。</div>'
     + '</div></div>';
   document.body.appendChild(d);
 }
@@ -532,6 +554,13 @@ async function saveGiftForm(){
       else if (before) await api('admin.saveImg', { row: r.row, data: '' });
     }
     toast('已儲存'); closeGift(); await loadAdmin(); renderAdmin();
+  } catch (e) { toast(e.message, true); }
+}
+async function autoTranslate(){
+  try {
+    const r = await api('admin.autoTranslate', {});
+    toast(r.count ? ('已自動翻譯 ' + r.count + ' 項：' + (r.list || []).slice(0, 2).join('、')) : '全部已有英文，毋須翻譯');
+    await loadAdmin(); renderAdmin();
   } catch (e) { toast(e.message, true); }
 }
 async function upgradeSheet(){
@@ -695,6 +724,8 @@ function backup(){
 }
 
 /* ================= 啟動 ================= */
+/* 預熱：趁 Google 登入元件載入時先喚醒 Apps Script，減少首次等待 */
+try { fetch(API, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify({ action:'ping' }) }); } catch(e){}
 window.addEventListener('load', ()=>{ setTimeout(boot, 300); });
 </script>
 </body>
