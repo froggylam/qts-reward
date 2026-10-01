@@ -207,6 +207,8 @@ const I18N = {
     availPoints:'可用積分：', totalPts:'總分 ', frozenShort:'🔒 凍結 ',
     pickCls:'請選擇班別', confirmBind2:'確定你係 <b>{cls} 班 {no} 號</b> {who} 嗎？<br><b>一經確定，學生不能自行更改。</b>如打錯，請找老師協助。',
     notFound:'找不到這個座號，請確認班別及班號', taken:'該座號已被綁定，請找老師', notEnoughN:'積分不足（差 {n} 分）', refresh2:'🔄 重新整理', auditTab:'🗂️ 操作紀錄',
+    lookupFail:'未能確認座號（網絡問題），請再試一次', netErr:'網絡唔穩定，請再撳一次',
+    alreadyReq:'「{gift}」你已申請，等候老師批核', giftGone:'此禮物已下架',
     batchAdd:'➕ 全班加分', approveAll:'✅ 全部批准', previewBtn:'👀 預覽', leaveBtn:'🚪 退學', backBtn:'↩️ 復課'
   },
   en: {
@@ -234,6 +236,8 @@ const I18N = {
     availPoints:'Available:', totalPts:'Total ', frozenShort:'🔒 On hold ',
     pickCls:'Select your class', confirmBind2:'Are you <b>Class {cls} no. {no}</b> {who}?<br><b>Students cannot change this later.</b> Ask your teacher if you made a mistake.',
     notFound:'Seat number not found — please check', taken:'That seat number is already linked — ask your teacher', notEnoughN:'Not enough points (need {n} more)', refresh2:'🔄 Refresh', auditTab:'🗂️ Activity log',
+    lookupFail:'Could not check that seat number (network problem) — please try again', netErr:'Network problem — please try again',
+    alreadyReq:'You already applied for "{gift}" — waiting for approval', giftGone:'This reward is no longer available',
     batchAdd:'➕ Add to whole class', approveAll:'✅ Approve all', previewBtn:'👀 View', leaveBtn:'🚪 Left school', backBtn:'↩️ Reactivate'
   }
 };
@@ -247,6 +251,8 @@ const ERR_EN = [
   [/^未登入/, 'Not signed in'],
   [/登入憑證無效/, 'Session expired, please sign in again'],
   [/^帳戶未綁定/, 'Your account is not linked yet'],
+  [/^此禮物已下架$/, 'This reward is no longer available'],
+  [/^「.*」你已申請/, 'You already applied for this reward — please wait for approval'],
   [/^此帳戶已綁定/, 'This account is already linked'],
   [/^該座號已被綁定/, 'That seat number is already linked'],
   [/^電郵未驗證/, 'Email not verified'],
@@ -330,15 +336,32 @@ function busyOff(){
 const WRITE_ACTIONS = ['redeem', 'cancel', 'bind', 'admin.addPoints', 'admin.addPointsBatch', 'admin.approve',
                        'admin.approveAll', 'admin.reject', 'admin.saveGift', 'admin.saveImg', 'admin.moveGift',
                        'admin.deleteGift', 'admin.undoPoints', 'admin.undoBind', 'admin.setBind', 'admin.setState'];
+let API_CTRL = null;
 async function api(action, payload){
   if (WRITE_ACTIONS.indexOf(action) >= 0) busyOn('處理中，請稍等…');
+  let to = null;
   try {
     const body = Object.assign({ action, token: IDT }, payload || {});
-    const r = await fetch(API, { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) });
+    let opt = { method:'POST', headers:{'Content-Type':'text/plain;charset=utf-8'}, body: JSON.stringify(body) };
+    try {
+      API_CTRL = new AbortController();
+      opt.signal = API_CTRL.signal;
+      to = setTimeout(function(){ try { API_CTRL.abort(); } catch (e) {} }, 20000);   // 20 秒逾時，避免遮罩永久卡住
+    } catch (e) {}
+    const r = await fetch(API, opt);
     const j = await r.json();
     if (!j.ok) throw new Error(terr(j.error || '發生錯誤'));
     return j.data;
-  } finally { busyOff(); }
+  } catch (e) {
+    if (e && (e.name === 'AbortError' || /Failed to fetch|NetworkError|Load failed|network/i.test(String(e.message || '')))) {
+      throw new Error(T('netErr'));
+    }
+    throw e;
+  } finally {
+    if (to) clearTimeout(to);
+    try { API_CTRL = null; } catch (e) {}
+    busyOff();
+  }
 }
 /* 加到主畫面提示（只喺手機、未加入、未撳過「知道了」時顯示）*/
 function installHint(){
@@ -451,9 +474,9 @@ async function doBind(){
   if (!cls) { toast(T('pickCls'), true); return; }
   if (!no) { toast(T('needClsNo'), true); return; }
   let info = null;
-  try { info = await api('lookup', { cls: cls, no: Number(no) }); } catch (e) {}
-  if (info && !info.found) { toast(T('notFound'), true); return; }
-  if (info && info.taken) { toast(T('taken'), true); return; }
+  try { info = await api('lookup', { cls: cls, no: Number(no) }); } catch (e) { toast(T('lookupFail'), true); return; }
+  if (!info || !info.found) { toast(T('notFound'), true); return; }
+  if (info.taken) { toast(T('taken'), true); return; }
   const who = info ? ('<b>' + esc(info.chi) + '</b>' + (info.eng ? '（' + esc(info.eng) + '）' : '')) : '';
   ask(T('confirmBind2', { cls: esc(cls), no: esc(no), who: who }), async function(){
     try { await api('bind', { cls, no }); toast(T('sentWait')); setTimeout(boot, 800); }
@@ -468,12 +491,13 @@ function renderPending(){
 
 /* ================= 學生：兌換所 ================= */
 function renderStudent(reqs){
-  const s = ME.student, avail = ME.available;
+  const s = ME.student, avail = Math.max(0, Number(ME.available || 0));
   const isPrev = !!(ME && ME.preview);
   let rows = '';
-  const pendNames = (reqs || []).filter(r=>r.state === '待批核').map(r=>String(r.gift));
+  const pendReqs = (reqs || []).filter(r=>r.state === '待批核');
   GIFTS.forEach(g=>{
-    const already = pendNames.indexOf(String(g.name)) >= 0;
+    const already = pendReqs.some(r => (g.id && r.giftId) ? (String(r.giftId) === String(g.id))
+                                                        : (String(r.gift) === String(g.name)));
     const can = avail >= g.cost && g.stock > 0 && !isPrev && !already;
     const stockTxt = (Number(g.stock) > 0) ? T('inStock') : T('soldOut');
     const nm = gName(g), nt = gNote(g);
@@ -481,7 +505,7 @@ function renderStudent(reqs){
       + '<td class="item lead">' + esc(nm) + (nt ? '<small>' + esc(nt) + '</small>' : '<small>' + T('gain1') + '</small>') + '</td>'
       + '<td class="cost" data-label="' + T('thCost') + '">' + g.cost + '</td>'
       + '<td class="stock" data-label="' + T('thStock') + '">' + stockTxt + '</td>'
-      + '<td class="act">' + (can ? '<button class="btn" onclick="redeem(' + g.row + ',\'' + esc(nm) + '\')">' + T('thRedeem') + '</button>'
+      + '<td class="act">' + (can ? '<button class="btn" data-row="' + g.row + '" onclick="redeem(' + g.row + ')">' + T('thRedeem') + '</button>'
                      : '<button class="btn dis" disabled>' + (isPrev ? '👀 預覽' : (already ? T('pendingTag') : (Number(g.stock) > 0 ? T('notEnoughN', { n: Math.max(0, g.cost - avail) }) : T('soldOut')))) + '</button>') + '</td></tr>';
   });
   let rh = '';
@@ -490,7 +514,7 @@ function renderStudent(reqs){
     rh += '<tr><td class="lead">' + esc(histName(r.gift)) + '</td>'
         + '<td class="cost" data-label="' + T('thPoints') + '">' + r.cost + '</td>'
         + '<td data-label="' + T('thState') + '" style="color:' + c + ';font-weight:900">' + esc(stateTxt(r.state))
-        + (r.state === '待批核' ? ' <button class="btn btnS" style="background:#c0392b;padding:5px 9px;font-size:12px" onclick="cancelAsk(\'' + esc(r.gift) + '\')">' + T('cancelReqBtn') + '</button>' : '') + '</td>'
+        + (r.state === '待批核' ? ' <button class="btn btnS" style="background:#c0392b;padding:5px 9px;font-size:12px" onclick="cancelAsk(\'' + esc(r.gift) + '\',' + (r.row || 0) + ',\'' + esc(r.giftId || '') + '\')">' + T('cancelReqBtn') + '</button>' : '') + '</td>'
         + '<td data-label="' + T('thTime') + '">' + esc(r.time) + '</td></tr>';
   });
   const who = (LANG === 'en' && s.eng) ? s.eng : s.chi;
@@ -591,19 +615,24 @@ function approveAllAsk(){
       } catch (e) { toast(e.message, true); }
     });
 }
-async function redeem(row, name){
-  let cost = 0;
-  (GIFTS || []).forEach(g=>{ if (Number(g.row) === Number(row)) cost = g.cost; });
+async function redeem(row){
+  const g0 = (GIFTS || []).filter(g=>Number(g.row) === Number(row))[0] || {};
+  const name = gName(g0), cost = Number(g0.cost || 0);
   const left = Math.max(0, (ME && ME.available ? ME.available : 0) - cost);
   ask(T('confirmRedeemFull', { gift: esc(name), cost: cost, left: left }), async function(){
-    try { const r = await api('redeem', { giftRow: row }); toast(T('redeemSent', { n: r.available })); setTimeout(boot, 1200); }
-    catch (e) { toast(e.message, true); }
+    const btn = document.querySelector('button[data-row="' + row + '"]');
+    if (btn) { btn.disabled = true; btn.classList.add('dis'); btn.textContent = T('pendingTag'); }   // 即時停用，防連撳
+    try { const r = await api('redeem', { giftRow: row }); toast(T('redeemSent', { n: r.available })); setTimeout(boot, 900); }
+    catch (e) {
+      if (btn) { btn.disabled = false; btn.classList.remove('dis'); btn.textContent = T('thRedeem'); }
+      toast(e.message, true);
+    }
   });
 }
 /* 學生自行取消申請（自動解凍）*/
-function cancelAsk(gift){
+function cancelAsk(gift, reqRow, giftId){
   ask(T('confirmCancel', { gift: esc(gift) }), async function(){
-    try { await api('cancel', {}); toast(T('cancelled')); setTimeout(boot, 900); }
+    try { await api('cancel', { reqRow: reqRow || 0, giftId: giftId || '', gift: gift }); toast(T('cancelled')); setTimeout(boot, 900); }
     catch (e) { toast(e.message, true); }
   });
 }
@@ -721,24 +750,6 @@ function renderTab(){
       + '<button class="btn btnS" style="background:#c0392b" onclick="decide(\'' + esc(r.cls) + '\',' + r.no + ',\'' + esc(r.gift) + '\',0,' + (r.row || 0) + ')">拒絕</button></div></div>';
     }).join('')
       : '<div class="hint">暫無待批核申請</div>';
-    h += '<div class="sechd">🔑 綁定申請 <span class="badge">' + bd.length + '</span></div>';
-    h += bd.length ? '<div class="tblwrap"><table class="rt"><thead><tr><th>班別</th><th>班號</th><th>姓名</th><th>電郵</th><th>操作</th></tr></thead><tbody>'
-      + bd.map(s=>'<tr><td data-label="班別">' + esc(s.cls) + '</td><td data-label="班號">' + s.no + '</td><td class="lead">' + esc(s.chi) + '</td>'
-        + '<td data-label="電郵" style="font-size:11px">' + esc(s.email) + '</td>'
-        + '<td class="act"><button class="btn btn3 btnS" onclick="approveBind(\'' + s.cls + '\',' + s.no + ',1)">批准</button> '
-        + '<button class="btn btnS" style="background:#c0392b" onclick="approveBind(\'' + s.cls + '\',' + s.no + ',0)">拒絕</button></td></tr>').join('')
-      + '</tbody></table></div>' : '<div class="hint">暫無綁定申請</div>';
-    c.innerHTML = h;
-  } else if (TAB === 'audit') {
-    const au = ADMIN.audit || [];
-    let h = '<div class="sechd">' + T('auditTab') + ' <span class="badge">' + au.length + '</span></div>';
-    h += au.length ? '<div class="tblwrap"><table class="rt"><thead><tr><th>時間</th><th>操作者</th><th>動作</th><th>對象</th><th>細節</th></tr></thead><tbody>'
-      + au.map(a=>'<tr><td data-label="時間" style="font-size:12px">' + esc(a.time) + '</td>'
-        + '<td data-label="操作者" style="font-size:11px">' + esc(a.who) + '</td>'
-        + '<td class="lead" style="font-size:13px">' + esc(a.action) + '</td>'
-        + '<td data-label="對象" style="font-size:13px">' + esc(a.target) + '</td>'
-        + '<td class="full" style="font-size:12px">' + esc(a.detail) + '</td></tr>').join('')
-      + '</tbody></table></div>' : '<div class="hint">暫無紀錄</div>';
     c.innerHTML = h;
   } else if (TAB === 'gifts') {
     let h = '<div class="tblwrap"><table class="rt"><thead><tr><th>圖示</th><th>名稱</th><th>積分</th><th>供應</th><th>上架</th><th>操作</th></tr></thead><tbody>';
@@ -947,8 +958,6 @@ function editGift(row){
     +     '<select class="inp" id="gStock"><option value="999"' + (Number(GE.stock) > 0 ? ' selected' : '') + '>✅ 有貨</option>'
     +     '<option value="0"' + (Number(GE.stock) > 0 ? '' : ' selected') + '>⛔ 冇貨（售罄）</option></select></div>'
     + '</div><div class="row2">'
-    +   '<div class="fld"><label>上限類型（暫未生效）</label><select id="gLt">' + opts(GE.limitType, ['每週','每月','活動']) + '</select></div>'
-    +   '<div class="fld"><label>上限次數</label><input id="gLn" type="number" value="' + GE.limitN + '"></div>'
     + '</div>'
     + '<div class="fld"><label>上架</label><select id="gOn">' + opts(GE.on, ['是','否']) + '</select></div>'
     + '<div class="fld"><label>備註（中文）</label><input id="gNote" value="' + esc(GE.note) + '"></div>'
