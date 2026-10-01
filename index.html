@@ -82,6 +82,7 @@ select.inp{width:auto;text-align:left}
 .fld input[type=range]{padding:0;border:0;background:transparent}
 .row2{display:flex;gap:10px}
 .row2 .fld{flex:1}
+@media(max-width:620px){.row2{display:block}}
 .cropbox{width:200px;height:200px;margin:8px auto;border:4px solid #c98b2e;border-radius:16px;overflow:hidden;background:#fff;touch-action:none;cursor:move;position:relative}
 .cropbox canvas{display:block;width:200px;height:200px}
 .spin{display:inline-block;width:15px;height:15px;border:3px solid #e0b060;border-top-color:#8a4b00;border-radius:50%;animation:spinrot .8s linear infinite;vertical-align:-2px}
@@ -669,7 +670,6 @@ function renderAdmin(){
   const total = stu.reduce((a,s)=>a+(s.points||0),0);
   const st = '<div class="stat">'
     + '<div><b>' + stu.length + '</b><span>學生總數（4 組）</span></div>'
-    + '<div><b>' + total + '</b><span>全級總積分</span></div>'
     + '<div><b>' + pending.length + '</b><span>待批核換領</span></div>'
     + '<div><b>' + binds.length + '</b><span>已綁定帳戶</span></div></div>';
 
@@ -703,7 +703,7 @@ function renderAdmin(){
 }
 function tabBtn(id, label){ return '<button class="tab' + (TAB===id?' on':'') + '" onclick="setTab(\'' + id + '\')">' + label + '</button>'; }
 function setTab(id){ TAB = id; try { localStorage.setItem('admTab', id); } catch (e) {} renderAdmin(); }
-let LOGQ = '';
+let LOGALL = false, LOGQ = '';
 function renderTab(){
   document.querySelectorAll('.tab').forEach(function(b){
     b.classList.remove('on');
@@ -781,7 +781,10 @@ function renderTab(){
     if (kq) lg = lg.filter(l=>String(l.name||'').toLowerCase().indexOf(kq) >= 0
                            || String(l.reason||'').toLowerCase().indexOf(kq) >= 0
                            || String(l.cls||'').toLowerCase().indexOf(kq) >= 0);
-    let h = '<div class="sechd">📜 加分紀錄 <span class="badge">' + lg.length + '</span>'
+    const lgTotal = lg.length;
+    if (!LOGALL && lg.length > 30) lg = lg.slice(0, 30);        // 預設只顯示最近 30 筆
+    let h = '<div class="sechd">📜 加分紀錄 <span class="badge">' + lg.length + (LOGALL ? '' : ' / ' + lgTotal) + '</span>'
+      + (lgTotal > 30 ? '<button class="btn btnS btn3" style="margin-left:8px" onclick="LOGALL=!LOGALL;renderTab()">' + (LOGALL ? '只顯示最近 30 筆' : '顯示全部 (' + lgTotal + ')') + '</button>' : '')
       + '<input class="inp sm" placeholder="🔍 搜尋姓名／班別／原因" value="' + esc(LOGQ) + '" oninput="LOGQ=this.value;renderTab()" style="margin-left:8px;width:200px">'
       + '</div><div class="tblwrap"><table class="rt"><thead><tr><th>姓名</th><th>時間</th><th>班別</th><th>分數</th><th>原因</th><th>操作</th></tr></thead><tbody>';
     lg.forEach(l=>{
@@ -950,28 +953,28 @@ function editGift(row){
   const d = document.createElement('div'); d.id = 'gwrap';
   d.innerHTML = '<div class="modal"><div class="mbox">'
     + '<h3>🎀 ' + (row ? '編輯禮物' : '新增禮物') + '</h3>'
-    +   '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
-    +   '</div></div>'
-    + '<div class="fld"><label>圖示 emoji（冇圖片時顯示）</label><input id="gIcon" value="' + esc(GE.icon) + '">'
-    +   '<div class="eq">' + EMOJI_QUICK.map(function(e){ return '<button type="button" class="epb" onclick="pickEmoji(\'' + e + '\')">' + e + '</button>'; }).join('') + '<button type="button" class="epb" style="width:auto;padding:0 12px;font-size:12px" onclick="toggleEpick()">😀 更多</button></div>' + '<div class="epick" id="epickFull" style="display:none">' + EMOJIS.map(function(e){ return '<button type="button" class="epb" onclick="pickEmoji(\'' + e + '\')">' + e + '</button>'; }).join('') + '</div>'
-    +   '<div style="margin-top:8px"><button type="button" class="btn btn3 btnS" onclick="openFullEmoji()">🌐 開啟完整 emoji 選擇器（同 WhatsApp 一樣，可搜尋）</button></div>'
-    +   '<div class="hint" style="margin-top:6px">👆 一撳即用；亦可自己打／貼任何 emoji（iPhone 用鍵盤 emoji 鍵，電腦用 <b>Win + .</b>）</div>'
-    + '</div>'
-    + '<div class="fld"><label>禮物名稱（中文）</label><input id="gName" value="' + esc(GE.name) + '"></div>'
-    + '<div class="fld"><label>Reward name (English)　英文名稱</label><input id="gNameEn" value="' + esc(GE.nameEn) + '"></div>'
     + '<div class="row2">'
-    +   '<div class="fld"><label>所需積分</label><input id="gCost" type="number" value="' + GE.cost + '"></div>'
-    +   '<div class="fld"><label>供應（學生只會見到「有貨／冇貨」）</label>'
-    +     '<select class="inp" id="gStock"><option value="999"' + (Number(GE.stock) > 0 ? ' selected' : '') + '>✅ 有貨</option>'
-    +     '<option value="0"' + (Number(GE.stock) > 0 ? '' : ' selected') + '>⛔ 冇貨（售罄）</option></select></div>'
-    + '</div><div class="row2">'
+    +   '<div class="fld"><label>圖示 emoji</label><input id="gIcon" value="' + esc(GE.icon) + '">'
+    +     '<div class="eq">' + EMOJI_QUICK.map(function(e){ return '<button type="button" class="epb" onclick="pickEmoji(this.textContent)">' + e + '</button>'; }).join('') + '<button type="button" class="epb" style="width:auto;padding:0 12px;font-size:12px" onclick="toggleEpick()">😀 更多</button></div>'
+    +     '<div class="epick" id="epickFull" style="display:none">' + EMOJIS.map(function(e){ return '<button type="button" class="epb" onclick="pickEmoji(this.textContent)">' + e + '</button>'; }).join('') + '</div>'
+    +   '</div>'
+    +   '<div class="fld"><label>禮物名稱（中文）</label><input id="gName" value="' + esc(GE.name) + '"></div>'
     + '</div>'
-    + '<div class="fld"><label>上架</label><select id="gOn">' + opts(GE.on, ['是','否']) + '</select></div>'
-    + '<div class="fld"><label>備註（中文）</label><input id="gNote" value="' + esc(GE.note) + '"></div>'
-    + '<div class="fld"><label>Note (English)　英文備註</label><input id="gNoteEn" value="' + esc(GE.noteEn) + '"></div>'
+    + '<div class="row2">'
+    +   '<div class="fld"><label>Reward name (English)　英文名稱</label><input id="gNameEn" value="' + esc(GE.nameEn) + '"></div>'
+    +   '<div class="fld"><label>所需積分</label><input id="gCost" type="number" value="' + GE.cost + '"></div>'
+    + '</div>'
+    + '<div class="row2">'
+    +   '<div class="fld"><label>供應（學生只見到「有貨／冇貨」）</label><select class="inp" id="gStock"><option value="999"' + (Number(GE.stock) > 0 ? ' selected' : '') + '>✅ 有貨</option><option value="0"' + (Number(GE.stock) > 0 ? '' : ' selected') + '>⛔ 冇貨（售罄）</option></select></div>'
+    +   '<div class="fld"><label>上架（學生見唔見到）</label><select id="gOn">' + opts(GE.on, ['是','否']) + '</select></div>'
+    + '</div>'
+    + '<div class="row2">'
+    +   '<div class="fld"><label>備註（中文）</label><input id="gNote" value="' + esc(GE.note) + '"></div>'
+    +   '<div class="fld"><label>Note (English)　英文備註</label><input id="gNoteEn" value="' + esc(GE.noteEn) + '"></div>'
+    + '</div>'
     + '<div class="foot"><div><button class="btn btn3" onclick="saveGiftForm()">儲存</button> '
     + '<button class="btn" onclick="closeGift()">取消</button></div></div>'
-    + '<div class="hint" style="margin-top:8px">💡 英文欄位<b>留空 = 系統自動翻譯</b>（你只需要輸入中文！）如需指定英文，直接填寫即可覆蓋。</div>'
+    + '<div class="hint" style="margin-top:8px">💡 英文欄位<b>留空 = 系統自動翻譯</b>（只需輸入中文）；emoji 亦可用 <b>Win + .</b> 自行輸入。</div>'
     + '</div></div>';
   document.body.appendChild(d);
 }
