@@ -1,0 +1,25 @@
+{
+  "name": "獎勵兌換所 — 數學科獎勵計劃",
+  "short_name": "獎勵兌換所",
+  "description": "數學科獎勵計劃：查看積分、兌換禮物",
+  "lang": "zh-HK",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f6e7c8",
+  "theme_color": "#c98b2e",
+  "icons": [
+    {
+      "src": "icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
