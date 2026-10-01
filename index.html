@@ -136,6 +136,7 @@ select.inp{width:auto;text-align:left}
   .rt td.ico .gimg{width:46px!important;height:46px!important}
   .rt td.act{padding-top:8px;clear:both}
   .rt td.act .btn{padding:10px 14px}
+  .rt td.act .btn.btnS{width:auto;padding:8px 12px;font-size:13px;display:inline-block}
   /* 管理台學生列表：手機用「精簡表格」，一屏睇 12–15 人 */
   .ct{display:table!important;width:100%!important;border:3px solid #b87b22!important;border-radius:14px;overflow:hidden;background:#fffdf5!important;font-size:13px;border-spacing:0!important}
   .ct thead{display:table-header-group!important}
@@ -576,13 +577,18 @@ function renderTab(){
   } else if (TAB === 'gifts') {
     let h = '<div class="tblwrap"><table class="rt"><thead><tr><th>圖示</th><th>名稱</th><th>積分</th><th>存貨</th><th>上限</th><th>上架</th><th>操作</th></tr></thead><tbody>';
     ADMIN.gifts.forEach(g=>{
+      const on = (g.on === true || g.on === '是');
       h += '<tr><td class="ico">' + iconHtml(g, 40) + '</td><td class="lead">' + esc(g.name)
         + (g.nameEn ? '<div style="font-size:11px;color:#a3803f">' + esc(g.nameEn) + '</div>' : '<div style="font-size:11px;color:#c0392b">（未有英文名）</div>')
         + '</td><td class="cost" data-label="積分">' + g.cost + '</td>'
         + '<td data-label="存貨">' + (g.stock >= 999 ? '無限' : g.stock) + '</td>'
         + '<td data-label="上限" style="font-size:13px">' + esc(g.limitType) + ' ' + g.limitN + ' 次</td>'
-        + '<td data-label="上架">' + (g.on === '是' || g.on === true ? '✅' : '—') + '</td>'
-        + '<td class="act"><button class="btn btnS" onclick="editGift(' + g.row + ')">編輯</button></td></tr>';
+        + '<td data-label="上架">' + (on ? '✅ 已上架' : '⛔ 已下架') + '</td>'
+        + '<td class="act">'
+        +   '<button class="btn btnS" onclick="moveGift(' + g.row + ',-1)" title="上移">⬆️</button> '
+        +   '<button class="btn btnS" onclick="moveGift(' + g.row + ',1)" title="下移">⬇️</button> '
+        +   '<button class="btn btnS ' + (on ? 'btn2' : 'btn3') + '" onclick="toggleGift(' + g.row + ',' + (on ? '0' : '1') + ')">' + (on ? '下架' : '上架') + '</button> '
+        +   '<button class="btn btnS" onclick="editGift(' + g.row + ')">編輯</button></td></tr>';
     });
     c.innerHTML = h + '</tbody></table></div><div style="margin-top:12px"><button class="btn btn3" onclick="editGift(0)">+ 新增禮物</button> <button class="btn btn2" onclick="autoTranslate()">🔤 自動翻譯全部</button></div>';
   } else {
@@ -605,6 +611,26 @@ async function addPts(cls, no, name){
   try { const r = await api('admin.addPoints', { cls, no, points: pts, reason }); toast(name + ' 現有 ' + r.points + ' 分'); await loadAdmin(); renderAdmin(); }
   catch (e) { toast(e.message, true); }
 }
+/* 調整禮物次序 */
+async function moveGift(row, dir){
+  try { await api('admin.moveGift', { row: row, dir: dir }); await loadAdmin(); renderAdmin(); }
+  catch (e) { toast(e.message, true); }
+}
+/* 一撳上架／下架 */
+function toggleGift(row, toOn){
+  const g = (ADMIN.gifts.filter(x=>x.row === row)[0] || {});
+  ask('確定將「<b>' + esc(g.name || '') + '</b>」' + (toOn ? '<b>上架</b>（學生見到）' : '<b>下架</b>（學生見唔到）') + '？',
+    async function(){
+      try {
+        await api('admin.saveGift', { gift: {
+          row: row, icon: g.icon, name: g.name, nameEn: g.nameEn,
+          cost: g.cost, stock: g.stock, limitType: g.limitType, limitN: g.limitN,
+          on: !!toOn, note: g.note, noteEn: g.noteEn } });
+        toast(toOn ? '已上架' : '已下架'); await loadAdmin(); renderAdmin();
+      } catch (e) { toast(e.message, true); }
+    });
+}
+
 async function decide(cls, no, gift, ok){
   ask('確定' + (ok ? '<b>批准</b>' : '<b>拒絕</b>') + ' ' + esc(cls) + ' 班 ' + no + ' 號嘅「<b>' + esc(gift) + '</b>」申請？'
       + (ok ? '<br>批准後會正式扣分。' : '<br>拒絕後積分會退回學生。'),
@@ -632,8 +658,58 @@ async function approveBind(cls, no, ok){
 let GE = null, CROP = null;
 function val(id){ const e = document.getElementById(id); return e ? e.value : ''; }
 /* 常用獎勵 emoji（可自行輸入其他） */
-const EMOJIS = ['🎁','🎀','🍫','🍬','🍭','🍪','🍩','🍿','🥤','🧃','🍕','🍔','🍟','🎫','🏅','🥇','⭐','🌟','💎','🧸','🎮','🎧','🎨','📔','📚','✏️','🖊️','📏','🧮','📐','🧢','👕','🎒','🐸','🚀','🍀','🔥','💯','🆓','🛍️','🎟️'];
+const EMOJIS = [
+  '🎁','🎀','🎫','🎟️','🏅','🥇','🥈','🥉','🏆','⭐','🌟','✨','💫','💎','👑','🎖️','📜','🛍️','🆓','💯',
+  '🍫','🍬','🍭','🍪','🍩','🍰','🧁','🍦','🍧','🍮','🥧','🍿','🍕','🍔','🍟','🌭','🥪','🍜','🍱','🍣',
+  '🥤','🧃','🧋','☕','🍵','🥛','🍺','🍹','🍎','🍊','🍇','🍓','🥭','🍉','🍌','🥝','🍒','🥑','🍫','🍯',
+  '🧸','🐸','🐱','🐶','🐼','🐨','🦊','🐰','🦁','🐯','🐵','🐧','🦄','🐲','🦖','🐢','🦋','🐝','🐬','🐳',
+  '🎮','🕹️','🎲','🧩','🎯','🎳','🎰','🎨','🖌️','🎭','🎬','🎤','🎧','🎸','🎹','🥁','🎺','🎻','🎼','📸',
+  '📔','📕','📚','📖','📝','✏️','🖊️','🖍️','📏','📐','🧮','🗂️','📎','📌','🔖','🗒️','💡','🔬','🔭','🧪',
+  '⚽','🏀','🏐','🏈','⚾','🎾','🏓','🏸','🥊','🏊','🚴','🏃','⛹️','🤸','🧗','🏋️','🤾','🚀','✈️','🚲',
+  '💻','🖥️','⌨️','🖱️','📱','⌚','🎙️','🔔','🎈','🎉','🎊','🌈','🍀','🔥','❄️','☀️','🌙','⚡','💧','❤️'];
 function pickEmoji(e){ const i = document.getElementById('gIcon'); if (i) i.value = e; }
+
+/* 完整 emoji 選擇器：載入 emoji-picker-element（全 Unicode、可搜尋、有膚色） */
+let EPK_STATE = 0;   // 0=未載入 1=載入中 2=可用 -1=失敗
+function loadEmojiPicker(cb){
+  try {
+    if (window.customElements && customElements.get('emoji-picker')) { EPK_STATE = 2; cb(); return; }
+  } catch (e) {}
+  if (EPK_STATE === 2) { cb(); return; }
+  if (EPK_STATE === 1) { toast('emoji 選擇器載入中，請 1 秒後再試', true); return; }
+  if (EPK_STATE === -1) { toast('無法載入完整選擇器（網絡問題），請用上面嘅內建 emoji', true); return; }
+  EPK_STATE = 1;
+  const sc = document.createElement('script');
+  sc.type = 'module';
+  sc.src = 'https://cdn.jsdelivr.net/npm/emoji-picker-element@1/index.js';
+  sc.onload = function(){ setTimeout(function(){ EPK_STATE = 2; cb(); }, 200); };
+  sc.onerror = function(){ EPK_STATE = -1; toast('無法載入完整 emoji 選擇器（網絡問題）', true); };
+  document.head.appendChild(sc);
+}
+function openFullEmoji(){
+  loadEmojiPicker(function(){
+    const d = document.createElement('div');
+    d.id = 'epFull';
+    d.setAttribute('style', 'position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(60,30,0,.55);z-index:10001;display:table;width:100%;height:100%');
+    d.innerHTML = '<div style="display:table-cell;vertical-align:middle;padding:10px">'
+      + '<div style="background:#fdf7e6;border:6px solid #c98b2e;border-radius:22px;padding:12px;max-width:430px;margin:0 auto">'
+      + '<div style="font-size:16px;font-weight:900;color:#5a3407;margin-bottom:8px">揀一個 emoji</div>'
+      + '<div id="epHost" style="height:min(62vh,420px);overflow:hidden;border-radius:14px;background:#fff"></div>'
+      + '<div style="text-align:center;margin-top:10px"><button class="btn btn2" id="epClose">關閉</button></div>'
+      + '</div></div>';
+    document.body.appendChild(d);
+    try {
+      const pk = document.createElement('emoji-picker');
+      pk.setAttribute('style', 'width:100%;height:100%;--border-size:0;--border-radius:0');
+      pk.addEventListener('emoji-click', function(ev){
+        try { pickEmoji(ev.detail.unicode); } catch (e) {}
+        document.body.removeChild(d);
+      });
+      document.getElementById('epHost').appendChild(pk);
+    } catch (e) { toast('載入失敗，請用內建 emoji', true); }
+    document.getElementById('epClose').onclick = function(){ document.body.removeChild(d); };
+  });
+}
 
 function editGift(row){
   const g = row ? (ADMIN.gifts.filter(x=>x.row === row)[0] || {}) : {};
@@ -655,6 +731,7 @@ function editGift(row){
     +   '</div></div>'
     + '<div class="fld"><label>圖示 emoji（冇圖片時顯示）</label><input id="gIcon" value="' + esc(GE.icon) + '">'
     +   '<div class="epick">' + EMOJIS.map(function(e){ return '<button type="button" class="epb" onclick="pickEmoji(\'' + e + '\')">' + e + '</button>'; }).join('') + '</div>'
+    +   '<div style="margin-top:8px"><button type="button" class="btn btn3 btnS" onclick="openFullEmoji()">🌐 開啟完整 emoji 選擇器（同 WhatsApp 一樣，可搜尋）</button></div>'
     +   '<div class="hint" style="margin-top:6px">👆 一撳即用；亦可自己打／貼任何 emoji（iPhone 用鍵盤 emoji 鍵，電腦用 <b>Win + .</b>）</div>'
     + '</div>'
     + '<div class="fld"><label>禮物名稱（中文）</label><input id="gName" value="' + esc(GE.name) + '"></div>'
