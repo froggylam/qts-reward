@@ -84,7 +84,7 @@ select.inp{width:auto;text-align:left}
 .fld{margin-bottom:10px;text-align:left}
 .fld label{display:block;font-size:12px;font-weight:800;color:#8a4a12;margin-bottom:4px}
 .fld input,.fld select,.fld textarea{width:100%;font-family:inherit;font-size:15px;padding:8px 10px;border:3px solid #c98b2e;border-radius:10px;background:#fffdf5;text-align:left}
-.fld textarea{min-height:104px;resize:vertical;line-height:1.45}
+.fld textarea{min-height:152px;resize:vertical;line-height:1.5;font-size:15px}
 .fld input[type=range]{padding:0;border:0;background:transparent}
 .row2{display:flex;gap:10px}
 .row2 .fld{flex:1}
@@ -1104,7 +1104,7 @@ function editGift(row){
          desc: g.desc || g.note || '', descEn: g.descEn || g.noteEn || '' };
   const opts = function(v, list){ return list.map(x=>'<option'+(x===v?' selected':'')+'>'+x+'</option>').join(''); };
   const d = document.createElement('div'); d.id = 'gwrap';
-  d.innerHTML = '<div class="modal"><div class="mbox">'
+  d.innerHTML = '<div class="modal"><div class="mbox" style="max-width:640px">'
     + '<h3>🎀 ' + (row ? '編輯禮物' : '新增禮物') + '</h3>'
     + '<div class="row2">'
     +   '<div class="fld"><label>圖示 emoji</label><input id="gIcon" value="' + esc(GE.icon) + '">'
@@ -1122,8 +1122,8 @@ function editGift(row){
     +   '<div class="fld"><label>上架（學生見唔見到）</label><select id="gOn">' + opts(GE.on, ['是','否']) + '</select></div>'
     + '</div>'
     + '<div class="row2">'
-    +   '<div class="fld"><label>內容描述（中文）　<span style="font-weight:600;color:#a3803f">可多行（Shift + Enter 換行）</span></label><textarea id="gDesc" rows="4">' + esc(GE.desc) + '</textarea></div>'
-    +   '<div class="fld"><label>Description (English)　英文內容描述</label><textarea id="gDescEn" rows="4">' + esc(GE.descEn) + '</textarea></div>'
+    +   '<div class="fld"><label>內容描述（中文）　<span style="font-weight:600;color:#a3803f">可多行（Shift + Enter 換行）</span></label><textarea id="gDesc" rows="6">' + esc(GE.desc) + '</textarea></div>'
+    +   '<div class="fld"><label>Description (English)　英文內容描述</label><textarea id="gDescEn" rows="6">' + esc(GE.descEn) + '</textarea></div>'
     + '</div>'
     + '<div class="foot"><div><button class="btn btn3" onclick="saveGiftForm()">儲存</button> '
     + '<button class="btn" onclick="closeGift()">取消</button></div></div>'
