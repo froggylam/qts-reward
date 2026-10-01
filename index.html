@@ -588,7 +588,8 @@ function renderTab(){
         +   '<button class="btn btnS" onclick="moveGift(' + g.row + ',-1)" title="上移">⬆️</button> '
         +   '<button class="btn btnS" onclick="moveGift(' + g.row + ',1)" title="下移">⬇️</button> '
         +   '<button class="btn btnS ' + (on ? 'btn2' : 'btn3') + '" onclick="toggleGift(' + g.row + ',' + (on ? '0' : '1') + ')">' + (on ? '下架' : '上架') + '</button> '
-        +   '<button class="btn btnS" onclick="editGift(' + g.row + ')">編輯</button></td></tr>';
+        +   '<button class="btn btnS" onclick="editGift(' + g.row + ')">編輯</button> '
+        +   '<button class="btn btnS" style="background:#8e2f2f" title="刪除禮物" onclick="deleteGiftAsk(' + g.row + ',\'' + esc(g.name || '') + '\')">🗑️</button></td></tr>';
     });
     c.innerHTML = h + '</tbody></table></div><div style="margin-top:12px"><button class="btn btn3" onclick="editGift(0)">+ 新增禮物</button> <button class="btn btn2" onclick="autoTranslate()">🔤 自動翻譯全部</button></div>';
   } else {
@@ -610,6 +611,17 @@ async function addPts(cls, no, name){
   const reason = prompt('原因（可留空）：', '') || '';
   try { const r = await api('admin.addPoints', { cls, no, points: pts, reason }); toast(name + ' 現有 ' + r.points + ' 分'); await loadAdmin(); renderAdmin(); }
   catch (e) { toast(e.message, true); }
+}
+/* 刪除禮物（連 Sheet 列一齊刪） */
+function deleteGiftAsk(row, name){
+  ask('確定要<b>刪除</b>禮物「<b>' + esc(name) + '</b>」？<br><br>⚠️ 會由 Google Sheet 刪除該行，'
+      + '<b>無法復原</b>。<br>已完成嘅換領紀錄唔會受影響。<br><br>（只想暫停兌換？請改用「下架」）',
+    async function(){
+      try {
+        await api('admin.deleteGift', { row: row });
+        toast('已刪除「' + name + '」'); await loadAdmin(); renderAdmin();
+      } catch (e) { toast(e.message, true); }
+    });
 }
 /* 調整禮物次序 */
 async function moveGift(row, dir){
