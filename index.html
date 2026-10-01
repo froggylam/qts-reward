@@ -26,7 +26,9 @@ td:last-child{border-right:0}
 tr:nth-child(even) td{background:#fffaee}
 .ico{font-size:26px;line-height:1}
 .item{font-weight:800;color:#5a3407;text-align:left;padding-left:12px}
-.item small{display:block;font-weight:600;color:#a3803f;font-size:11px}
+.item small{display:block;font-weight:600;color:#a3803f;font-size:11.5px;line-height:1.35;margin-top:2px}
+.eq{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.epick{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;max-height:190px;overflow:auto;border:2px dashed #e8d9b5;border-radius:10px;padding:8px}
 .cost{font-weight:900;color:#e2571c;font-size:17px}
 .stock{color:#3a8a3a;font-weight:800}
 .limit{color:#d0296a;font-weight:800;font-size:12px}
@@ -504,7 +506,7 @@ function renderStudent(reqs){
     const stockTxt = (Number(g.stock) > 0) ? T('inStock') : T('soldOut');
     const nm = gName(g), nt = gNote(g);
     rows += '<tr><td class="ico">' + iconHtml(g) + '</td>'
-      + '<td class="item lead">' + esc(nm) + (nt ? '<small>' + esc(nt) + '</small>' : '<small>' + T('gain1') + '</small>') + '</td>'
+      + '<td class="item lead">' + esc(nm) + (nt ? '<small>' + esc(nt) + '</small>' : '') + '</td>'
       + '<td class="cost" data-label="' + T('thCost') + '">' + g.cost + '</td>'
       + '<td class="stock" data-label="' + T('thStock') + '">' + stockTxt + '</td>'
       + '<td class="act">' + (can ? '<button class="btn" data-row="' + g.row + '" onclick="redeem(' + g.row + ')">' + T('thRedeem') + '</button>'
@@ -530,7 +532,7 @@ function renderStudent(reqs){
     + rows + '</tbody></table></div>'
     + (rh ? '<div class="sechd">' + T('myHistory') + '</div><div class="tblwrap"><table class="rt"><thead><tr><th style="text-align:left;padding-left:12px">' + T('thGift') + '</th><th>' + T('thPoints') + '</th><th>' + T('thState') + '</th><th>' + T('thTime') + '</th></tr></thead><tbody>' + rh + '</tbody></table></div>' : '')
     + '<div class="foot">' + (isPrev
-        ? '<button class="btn btn2" onclick="exitPreview()">↩️ 返回管理台</button>'
+        ? ''
         : '<button class="btn btn2" onclick="logout()">' + T('logout') + '</button>') + '</div>', true);
 }
 function previewStudent(){
@@ -694,7 +696,8 @@ function renderAdmin(){
           ? '<input class="inp sm" id="q" placeholder="🔍 搜尋姓名／班號" value="' + esc(SEARCH) + '" oninput="SEARCH=this.value;renderTab()" style="flex:1;min-width:160px">'
           : '')
     + '</div><div id="tabc"></div>'
-    + '<div class="foot"><button class="btn btn3" onclick="exportXlsx()">📊 匯出 Excel</button><button class="btn btn2" onclick="backup()">匯出 CSV</button><button class="btn btn2" onclick="upgradeSheet()">🔧 升級表格</button><button class="btn btn2" onclick="recomputeAsk()">🧮 重算凍結</button><button class="btn" onclick="boot()">重新整理</button></div>';
+    + '<div class="foot"><button class="btn btn3" onclick="exportXlsx()">📊 匯出 Excel</button><button class="btn" onclick="boot()">🔄 重新整理</button>'
+    + '<div style="text-align:center;margin-top:14px"><a href="javascript:void(0)" onclick="recomputeAsk()" style="color:#b09a72;font-size:12px;text-decoration:underline">🧮 修復凍結分數（數據偏差時使用）</a></div></div>';
   shell(html);
   renderTab();
 }
@@ -878,6 +881,11 @@ async function approveBind(cls, no, ok){
 let GE = null, CROP = null;
 function val(id){ const e = document.getElementById(id); return e ? e.value : ''; }
 /* 常用獎勵 emoji（可自行輸入其他） */
+const EMOJI_QUICK = ['🎁','🍬','🍫','📒','✏️','🧸','🎧','🎫','🍪','🧁','🎮','⭐'];
+function toggleEpick(){
+  const el = document.getElementById('epickFull');
+  if (el) el.style.display = (el.style.display === 'none' ? 'block' : 'none');
+}
 const EMOJIS = [
   '🎁','🎀','🎫','🎟️','🏅','🥇','🥈','🥉','🏆','⭐','🌟','✨','💫','💎','👑','🎖️','📜','🛍️','🆓','💯',
   '🍫','🍬','🍭','🍪','🍩','🍰','🧁','🍦','🍧','🍮','🥧','🍿','🍕','🍔','🍟','🌭','🥪','🍜','🍱','🍣',
@@ -945,7 +953,7 @@ function editGift(row){
     +   '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
     +   '</div></div>'
     + '<div class="fld"><label>圖示 emoji（冇圖片時顯示）</label><input id="gIcon" value="' + esc(GE.icon) + '">'
-    +   '<div class="epick">' + EMOJIS.map(function(e){ return '<button type="button" class="epb" onclick="pickEmoji(\'' + e + '\')">' + e + '</button>'; }).join('') + '</div>'
+    +   '<div class="eq">' + EMOJI_QUICK.map(function(e){ return '<button type="button" class="epb" onclick="pickEmoji(\'' + e + '\')">' + e + '</button>'; }).join('') + '<button type="button" class="epb" style="width:auto;padding:0 12px;font-size:12px" onclick="toggleEpick()">😀 更多</button></div>' + '<div class="epick" id="epickFull" style="display:none">' + EMOJIS.map(function(e){ return '<button type="button" class="epb" onclick="pickEmoji(\'' + e + '\')">' + e + '</button>'; }).join('') + '</div>'
     +   '<div style="margin-top:8px"><button type="button" class="btn btn3 btnS" onclick="openFullEmoji()">🌐 開啟完整 emoji 選擇器（同 WhatsApp 一樣，可搜尋）</button></div>'
     +   '<div class="hint" style="margin-top:6px">👆 一撳即用；亦可自己打／貼任何 emoji（iPhone 用鍵盤 emoji 鍵，電腦用 <b>Win + .</b>）</div>'
     + '</div>'
