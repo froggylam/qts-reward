@@ -27,6 +27,9 @@ tr:nth-child(even) td{background:#fffaee}
 .ico{font-size:26px;line-height:1}
 .item{font-weight:800;color:#5a3407;text-align:left;padding-left:12px}
 .item small{display:block;font-weight:600;color:#a3803f;font-size:11.5px;line-height:1.35;margin-top:2px}
+.gt{table-layout:fixed}
+.gt .c1{width:8%} .gt .c2{width:20%} .gt .c3{width:34%} .gt .c4{width:11%} .gt .c5{width:11%} .gt .c6{width:16%}
+.gt td.desc{font-size:12.5px;color:#7a5a2a;line-height:1.35;text-align:left;padding:8px;white-space:normal}
 .eq{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
 .epick{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;max-height:190px;overflow:auto;border:2px dashed #e8d9b5;border-radius:10px;padding:8px}
 .cost{font-weight:900;color:#e2571c;font-size:17px}
@@ -199,7 +202,7 @@ const I18N = {
     confirmRedeemFull:'確定兌換「{gift}」？<br>會使用 <b>{cost} 分</b>，完成後餘下 {left} 分。',
     confirmCancel:'確定取消「{gift}」的申請？<br>積分會即刻退返，你可以重新申請。',
     confirmBind:'確定綁定 <b>{cls} 班 {no} 號</b>？<br><b>一經確定，學生不能自行更改。</b>如打錯，請找老師協助。',
-    thIcon:'圖示', thItem:'兌換物品', thCost:'所需積分', thStock:'供應', thLimit:'兌換限制', thRedeem:'兌換',
+    thIcon:'圖示', thItem:'兌換物品', thDesc:'內容描述', thCost:'所需積分', thStock:'供應', thLimit:'兌換限制', thRedeem:'兌換',
     unlim:'無限', gain1:'獲得 x1', notEnough:'積分不足', soldOut:'已換完',
     perWeek:'每週', perMonth:'每月', perEvent:'活動', limitFmt:'{t}限 {n} 次',
     myHistory:'📜 我的換領紀錄', thGift:'禮物', thPoints:'積分', thState:'狀態', thTime:'時間',
@@ -228,7 +231,7 @@ const I18N = {
     confirmRedeemFull:'Redeem "{gift}"?<br>This uses <b>{cost} pts</b>, leaving {left} pts.',
     confirmCancel:'Cancel your request for "{gift}"?<br>Your points will be released right away.',
     confirmBind:'Link to <b>Class {cls} no. {no}</b>?<br><b>Students cannot change this later.</b> Ask your teacher if you made a mistake.',
-    thIcon:'Icon', thItem:'Reward', thCost:'Points', thStock:'Available', thLimit:'Limit', thRedeem:'Redeem',
+    thIcon:'Icon', thItem:'Reward', thDesc:'Description', thCost:'Points', thStock:'Available', thLimit:'Limit', thRedeem:'Redeem',
     unlim:'Unlimited', gain1:'Get x1', notEnough:'Not enough points', soldOut:'Out of stock',
     perWeek:'per week', perMonth:'per month', perEvent:'per event', limitFmt:'{t}, {n} time(s)',
     myHistory:'📜 My redemption history', thGift:'Reward', thPoints:'Points', thState:'Status', thTime:'Time',
@@ -293,7 +296,7 @@ function iconHtml(g, size){
   return '<span class="ico">' + esc((g && g.icon) || '🎁') + '</span>';
 }
 function gName(g){ return (LANG === 'en' && g.nameEn) ? g.nameEn : g.name; }
-function gNote(g){ return (LANG === 'en' && g.noteEn) ? g.noteEn : (g.note || ''); }
+function gNote(g){ return (LANG === 'en' && (g.descEn || g.noteEn)) ? (g.descEn || g.noteEn) : (g.desc || g.note || ''); }
 function stateTxt(s){ return s === '已批准' ? T('stApproved') : (s === '已拒絕' ? T('stRejected') : (s === '待批核' ? T('stPending') : (s === '已取消' ? T('stCancelled') : s))); }
 function limitTxt(g){
   const t = g.limitType === '每月' ? T('perMonth') : (g.limitType === '活動' ? T('perEvent') : T('perWeek'));
@@ -507,7 +510,8 @@ function renderStudent(reqs){
     const stockTxt = (Number(g.stock) > 0) ? T('inStock') : T('soldOut');
     const nm = gName(g), nt = gNote(g);
     rows += '<tr><td class="ico">' + iconHtml(g) + '</td>'
-      + '<td class="item lead">' + esc(nm) + (nt ? '<small>' + esc(nt) + '</small>' : '') + '</td>'
+      + '<td class="item lead" style="padding:8px">' + esc(nm) + '</td>'
+      + '<td class="desc" data-label="' + T('thDesc') + '">' + esc(nt) + '</td>'
       + '<td class="cost" data-label="' + T('thCost') + '">' + g.cost + '</td>'
       + '<td class="stock" data-label="' + T('thStock') + '">' + stockTxt + '</td>'
       + '<td class="act">' + (can ? '<button class="btn" data-row="' + g.row + '" onclick="redeem(' + g.row + ')">' + T('thRedeem') + '</button>'
@@ -529,7 +533,7 @@ function renderStudent(reqs){
     + '<button class="btn btnS btn2" onclick="boot()">' + T('refresh2') + '</button></div>'
     + (isPrev ? '<div class="hint" style="margin:6px 0 12px;background:#fff6d8;border:3px dashed #e0b060;border-radius:12px;padding:10px">👀 <b>預覽模式（唯讀）</b>——你正以老師身分查看 ' + esc(s.cls) + ' ' + s.no + ' 嘅學生版面。可切換語言睇英文版；學生資料唔會被你改動。<button class="btn btnS btn3" style="margin-left:8px" onclick="exitPreview()">返回管理台</button></div>' : '')
     + (s.frozen > 0 ? '<div class="hint" style="margin-bottom:10px">' + T('frozenNote') + s.frozen + ' ' + T('pts') + '　｜　' + T('avail') + '<b>' + avail + '</b> ' + T('pts') + '</div>' : '')
-    + '<div class="tblwrap"><table class="rt"><thead><tr><th>' + T('thIcon') + '</th><th>' + T('thItem') + '</th><th>' + T('thCost') + '</th><th>' + T('thStock') + '</th><th>' + T('thRedeem') + '</th></tr></thead><tbody>'
+    + '<div class="tblwrap"><table class="rt gt"><thead><tr><th class="c1">' + T('thIcon') + '</th><th class="c2">' + T('thItem') + '</th><th class="c3">' + T('thDesc') + '</th><th class="c4">' + T('thCost') + '</th><th class="c5">' + T('thStock') + '</th><th class="c6">' + T('thRedeem') + '</th></tr></thead><tbody>'
     + rows + '</tbody></table></div>'
     + (rh ? '<div class="sechd">' + T('myHistory') + '</div><div class="tblwrap"><table class="rt"><thead><tr><th style="text-align:left;padding-left:12px">' + T('thGift') + '</th><th>' + T('thPoints') + '</th><th>' + T('thState') + '</th><th>' + T('thTime') + '</th></tr></thead><tbody>' + rh + '</tbody></table></div>' : '')
     + '<div class="foot">' + (isPrev
@@ -948,7 +952,8 @@ function editGift(row){
          icon: g.icon || '🎁', name: g.name || '', nameEn: g.nameEn || '',
          cost: g.cost || 0, stock: (g.stock === undefined ? 999 : g.stock),
          limitType: g.limitType || '每週', limitN: g.limitN || 1,
-         on: (g.on === '是' || g.on === true) ? '是' : '否', note: g.note || '', noteEn: g.noteEn || '' };
+         on: (g.on === '是' || g.on === true) ? '是' : '否',
+         desc: g.desc || g.note || '', descEn: g.descEn || g.noteEn || '' };
   const opts = function(v, list){ return list.map(x=>'<option'+(x===v?' selected':'')+'>'+x+'</option>').join(''); };
   const d = document.createElement('div'); d.id = 'gwrap';
   d.innerHTML = '<div class="modal"><div class="mbox">'
@@ -969,8 +974,8 @@ function editGift(row){
     +   '<div class="fld"><label>上架（學生見唔見到）</label><select id="gOn">' + opts(GE.on, ['是','否']) + '</select></div>'
     + '</div>'
     + '<div class="row2">'
-    +   '<div class="fld"><label>備註（中文）</label><input id="gNote" value="' + esc(GE.note) + '"></div>'
-    +   '<div class="fld"><label>Note (English)　英文備註</label><input id="gNoteEn" value="' + esc(GE.noteEn) + '"></div>'
+    +   '<div class="fld"><label>內容描述（中文）</label><input id="gDesc" value="' + esc(GE.desc) + '"></div>'
+    +   '<div class="fld"><label>Description (English)　英文內容描述</label><input id="gDescEn" value="' + esc(GE.descEn) + '"></div>'
     + '</div>'
     + '<div class="foot"><div><button class="btn btn3" onclick="saveGiftForm()">儲存</button> '
     + '<button class="btn" onclick="closeGift()">取消</button></div></div>'
@@ -1049,7 +1054,7 @@ async function saveGiftForm(){
   const gift = { row: GE.row || 0, icon: val('gIcon'), name: name, nameEn: val('gNameEn'),
     cost: Number(val('gCost')) || 0, stock: (String(val('gStock')).trim() === '' ? 999 : Number(val('gStock'))),
     limitType: val('gLt'), limitN: Number(val('gLn')) || 1,
-    on: val('gOn') === '是', note: val('gNote'), noteEn: val('gNoteEn') };
+    on: val('gOn') === '是', desc: val('gDesc'), descEn: val('gDescEn') };
   try {
     const r = await api('admin.saveGift', { gift: gift });
     toast('已儲存'); closeGift(); await loadAdmin(); renderAdmin();
@@ -1196,8 +1201,8 @@ function exportXlsx(){
         rows:[['時間','班別','班號','姓名','禮物','分數','狀態']]
           .concat(rq.map(x=>[x.time,x.cls,x.no,x.name,x.gift,x.cost,x.state])) },
       { name:'禮物清單', cols:[8,22,7,8,10,10,7,22],
-        rows:[['圖示','名稱','積分','存貨','上限類型','上限次數','上架','備註']]
-          .concat(gs.map(x=>[x.icon,x.name,x.cost,(x.stock>=999?'無限':x.stock),x.limitType,x.limitN,(x.on==='是'||x.on===true)?'是':'否',x.note||''])) },
+        rows:[['圖示','名稱','積分','存貨','上架','內容描述']]
+          .concat(gs.map(x=>[x.icon,x.name,x.cost,(x.stock>=999?'無限':x.stock),(x.on==='是'||x.on===true)?'是':'否',x.desc||x.note||''])) },
       { name:'加分紀錄', cols:[18,12,7,7,30],
         rows:[['時間','姓名','班別','分數','原因']]
           .concat(lg.map(x=>[x.time,x.name,x.cls,x.points,x.reason])) }
