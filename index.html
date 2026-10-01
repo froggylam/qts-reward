@@ -123,6 +123,31 @@ select.inp{width:auto;text-align:left}
   .rt td.act .btn{width:100%}
   .rt td.full{padding-top:4px;color:#7a5a20}
   .rt+.sechd,.sechd{margin-top:16px}
+  .onlypc{display:none!important}
+  #askOv .btn{font-size:15px;padding:11px 14px}
+  /* 禮物卡／紀錄卡收窄（圖示浮左，文字繞住） */
+  .rt tr{padding:9px 11px;margin-bottom:8px}
+  .rt td{padding:1.5px 0}
+  .rt td.ico{float:left;margin:0 9px 0 0;padding:0}
+  .rt td.ico .ico{font-size:30px;line-height:1}
+  .rt td.ico .gimg{width:46px!important;height:46px!important}
+  .rt td.act{padding-top:8px;clear:both}
+  .rt td.act .btn{padding:10px 14px}
+  /* 管理台學生列表：手機用「精簡表格」，一屏睇 12–15 人 */
+  .ct{display:table!important;width:100%!important;border:3px solid #b87b22!important;border-radius:14px;overflow:hidden;background:#fffdf5!important;font-size:13px;border-spacing:0!important}
+  .ct thead{display:table-header-group!important}
+  .ct tbody{display:table-row-group!important}
+  .ct tr{display:table-row!important;border:0!important;border-radius:0!important;margin:0!important;padding:0!important;box-shadow:none!important;background:transparent!important}
+  .ct th{padding:5px 4px!important;font-size:11px!important}
+  .ct td{display:table-cell!important;border-top:2px solid #ecd7a5!important;border-right:0!important;padding:5px 4px!important;text-align:center;vertical-align:middle;background:transparent!important;font-size:13px}
+  .ct td[data-label]::before{content:none!important}
+  .ct td.lead{text-align:left;font-size:14px;font-weight:900;color:#5a3407;padding:5px 6px!important}
+  .ct td.lead div{display:none}
+  .ct td.cost{font-size:15px!important;color:#c0392b;font-weight:900}
+  .ct .hide-s{display:none!important}
+  .ct td.act{padding:4px 6px!important}
+  .ct td.act .btn{width:auto;padding:6px 9px;font-size:12px;box-shadow:0 2px 0 #a36c1c;border-radius:9px}
+  .ct tr:nth-child(even) td{background:#fffaee!important}
 }
 </style>
 <link rel="manifest" href="manifest.json?v=2">
@@ -157,9 +182,14 @@ const I18N = {
     firstTime:'首次登入需要輸入班別及班號，老師批准後即可使用。',
     bindTitle:'首次使用：確認身分', bindDesc:'請輸入你的班別及班號（座位號）<br>例：4C 班 5 號 → 選「4C」、輸入「5」',
     classNoPh:'班號', sendApply:'送出申請', yourEmail:'你的登入電郵：',
-    bindNote:'送出後老師會核對並批准，一經批准即永久綁定。', needClsNo:'請輸入班號', sentWait:'已送出，等候老師批准',
+    bindNote:'一經確定即完成綁定，學生不能自行更改；如需更正請找老師。', needClsNo:'請輸入班號', sentWait:'綁定成功！',
     pendingTitle:'等候老師批准', pendingDesc:'你已申請綁定 {cls} 班 {no} 號（{chi}）<br>老師批准後即可查看積分及換領禮物。',
     refresh:'重新整理', myPoints:'我的積分：', frozenNote:'🔒 凍結中（待批核）：', avail:'可用：', pts:'分',
+    confirmTitle:'請確認', okBtn:'✅ 確定', cancelBtn:'❌ 取消', cancelReqBtn:'❌ 取消申請',
+    cancelled:'已取消申請，積分已退返', unbind:'🔓 解除',
+    confirmRedeemFull:'確定兌換「{gift}」？<br>會使用 <b>{cost} 分</b>，完成後餘下 {left} 分。',
+    confirmCancel:'確定取消「{gift}」的申請？<br>積分會即刻退返，你可以重新申請。',
+    confirmBind:'確定綁定 <b>{cls} 班 {no} 號</b>？<br><b>一經確定，學生不能自行更改。</b>如打錯，請找老師協助。',
     thIcon:'圖示', thItem:'兌換物品', thCost:'所需積分', thStock:'存貨', thLimit:'兌換限制', thRedeem:'兌換',
     unlim:'無限', gain1:'獲得 x1', notEnough:'積分不足', soldOut:'已換完',
     perWeek:'每週', perMonth:'每月', perEvent:'活動', limitFmt:'{t}限 {n} 次',
@@ -174,9 +204,14 @@ const I18N = {
     firstTime:'First time? Enter your class and class number. Your teacher will approve your account.',
     bindTitle:'First time — confirm your identity', bindDesc:'Enter your class and class number (seat no.)<br>Example: Class 4C, seat 5 → choose "4C" and type "5"',
     classNoPh:'Class no.', sendApply:'Send request', yourEmail:'Your login email:',
-    bindNote:'Your teacher will check and approve it. Once approved, the link is permanent.', needClsNo:'Please enter your class number', sentWait:'Sent! Waiting for teacher approval',
+    bindNote:'Once confirmed, the link is set. Students cannot change it — ask your teacher if needed.', needClsNo:'Please enter your class number', sentWait:'Linked successfully!',
     pendingTitle:'Waiting for teacher approval', pendingDesc:'You applied to link Class {cls} no. {no} ({chi}).<br>You can view your points and rewards once your teacher approves.',
     refresh:'Refresh', myPoints:'My points:', frozenNote:'🔒 On hold (pending):', avail:'Available:', pts:'pts',
+    confirmTitle:'Please confirm', okBtn:'✅ Confirm', cancelBtn:'❌ Cancel', cancelReqBtn:'❌ Cancel request',
+    cancelled:'Request cancelled — points released', unbind:'🔓 Unlink',
+    confirmRedeemFull:'Redeem "{gift}"?<br>This uses <b>{cost} pts</b>, leaving {left} pts.',
+    confirmCancel:'Cancel your request for "{gift}"?<br>Your points will be released right away.',
+    confirmBind:'Link to <b>Class {cls} no. {no}</b>?<br><b>Students cannot change this later.</b> Ask your teacher if you made a mistake.',
     thIcon:'Icon', thItem:'Reward', thCost:'Points', thStock:'Stock', thLimit:'Limit', thRedeem:'Redeem',
     unlim:'Unlimited', gain1:'Get x1', notEnough:'Not enough points', soldOut:'Out of stock',
     perWeek:'per week', perMonth:'per month', perEvent:'per event', limitFmt:'{t}, {n} time(s)',
@@ -321,6 +356,28 @@ async function boot(){
   }
 }
 
+/* ================= 確認視窗 ================= */
+function ask(html, onYes){
+  try{
+    const d = document.createElement('div');
+    d.id = 'askOv';
+    d.setAttribute('style', 'position:fixed;left:0;top:0;right:0;bottom:0;background:rgba(60,30,0,.55);z-index:9999;display:table;width:100%;height:100%');
+    d.innerHTML = '<div style="display:table-cell;vertical-align:middle;padding:18px">'
+      + '<div style="background:#fdf7e6;border:6px solid #c98b2e;border-radius:22px;padding:18px;max-width:420px;margin:0 auto;box-shadow:0 10px 0 #a36c1c">'
+      + '<div style="font-size:17px;font-weight:900;color:#5a3407;margin-bottom:10px">' + T('confirmTitle') + '</div>'
+      + '<div style="font-size:15px;color:#4a2f10;line-height:1.65;margin-bottom:16px">' + html + '</div>'
+      + '<div style="text-align:center;white-space:nowrap">'
+      + '<button class="btn btn3" id="askYes" style="min-width:44%">' + T('okBtn') + '</button>'
+      + '<button class="btn btn2" id="askNo" style="min-width:44%;margin-left:8px">' + T('cancelBtn') + '</button>'
+      + '</div></div></div>';
+    document.body.appendChild(d);
+    document.getElementById('askYes').onclick = function(){ document.body.removeChild(d); if (onYes) onYes(); };
+    document.getElementById('askNo').onclick = function(){ document.body.removeChild(d); };
+  } catch (e) {
+    if (onYes && window.confirm(String(html).replace(/<[^>]*>/g, ''))) onYes();
+  }
+}
+
 /* ================= 學生：綁定 ================= */
 function renderBind(){
   const classes = ['2A','2B','2C','2D','3A','3B','3C','3D','4A','4B','4C','4D','5A','5B','5C','5D','6A','6B','6C','6D'];
@@ -336,8 +393,10 @@ function renderBind(){
 async function doBind(){
   const cls = $('#cls').value, no = $('#no').value;
   if (!no) { toast(T('needClsNo'), true); return; }
-  try { await api('bind', { cls, no }); toast(T('sentWait')); setTimeout(boot, 800); }
-  catch (e) { toast(e.message, true); }
+  ask(T('confirmBind', { cls: esc(cls), no: esc(no) }), async function(){
+    try { await api('bind', { cls, no }); toast(T('sentWait')); setTimeout(boot, 800); }
+    catch (e) { toast(e.message, true); }
+  });
 }
 function renderPending(){
   shell('<div class="center"><h2>' + T('pendingTitle') + '</h2><p>'
@@ -367,7 +426,8 @@ function renderStudent(reqs){
     const c = r.state === '已批准' ? '#2f8f3f' : (r.state === '已拒絕' ? '#c0392b' : '#d0296a');
     rh += '<tr><td class="lead">' + esc(histName(r.gift)) + '</td>'
         + '<td class="cost" data-label="' + T('thPoints') + '">' + r.cost + '</td>'
-        + '<td data-label="' + T('thState') + '" style="color:' + c + ';font-weight:900">' + esc(stateTxt(r.state)) + '</td>'
+        + '<td data-label="' + T('thState') + '" style="color:' + c + ';font-weight:900">' + esc(stateTxt(r.state))
+        + (r.state === '待批核' ? ' <button class="btn btnS" style="background:#c0392b;padding:5px 9px;font-size:12px" onclick="cancelAsk(\'' + esc(r.gift) + '\')">' + T('cancelReqBtn') + '</button>' : '') + '</td>'
         + '<td data-label="' + T('thTime') + '">' + esc(r.time) + '</td></tr>';
   });
   const who = (LANG === 'en' && s.eng) ? s.eng : s.chi;
@@ -397,9 +457,20 @@ function previewStudent(){
 }
 function exitPreview(){ PREVIEW = null; ME = null; boot(); }
 async function redeem(row, name){
-  if (!confirm(T('confirmRedeem', { name: name }))) return;
-  try { const r = await api('redeem', { giftRow: row }); toast(T('redeemSent', { n: r.available })); setTimeout(boot, 1200); }
-  catch (e) { toast(e.message, true); }
+  let cost = 0;
+  (GIFTS || []).forEach(g=>{ if (Number(g.row) === Number(row)) cost = g.cost; });
+  const left = Math.max(0, (ME && ME.available ? ME.available : 0) - cost);
+  ask(T('confirmRedeemFull', { gift: esc(name), cost: cost, left: left }), async function(){
+    try { const r = await api('redeem', { giftRow: row }); toast(T('redeemSent', { n: r.available })); setTimeout(boot, 1200); }
+    catch (e) { toast(e.message, true); }
+  });
+}
+/* 學生自行取消申請（自動解凍）*/
+function cancelAsk(gift){
+  ask(T('confirmCancel', { gift: esc(gift) }), async function(){
+    try { await api('cancel', {}); toast(T('cancelled')); setTimeout(boot, 900); }
+    catch (e) { toast(e.message, true); }
+  });
 }
 async function logout(){
   try { await api('logout', { token: IDT }); } catch (e) {}
@@ -418,13 +489,13 @@ async function loadAdmin(){
 function renderAdmin(){
   const stu = ADMIN.students, reqs = ADMIN.requests, logs = ADMIN.logs;
   const pending = reqs.filter(r=>r.state === '待批核');
-  const binds = stu.filter(s=>s.bindState === '待批核');
+  const binds = stu.filter(s=>s.bindState === '已批准');
   const total = stu.reduce((a,s)=>a+(s.points||0),0);
   const st = '<div class="stat">'
     + '<div><b>' + stu.length + '</b><span>學生總數（4 組）</span></div>'
     + '<div><b>' + total + '</b><span>全級總積分</span></div>'
     + '<div><b>' + pending.length + '</b><span>待批核換領</span></div>'
-    + '<div><b>' + binds.length + '</b><span>待批准綁定</span></div></div>';
+    + '<div><b>' + binds.length + '</b><span>已綁定帳戶</span></div></div>';
 
   /* 按組別分頁 */
   const groups = [];
@@ -443,6 +514,7 @@ function renderAdmin(){
     + tabBtn('gifts','🎀 禮物清單') + tabBtn('logs','📜 加分紀錄') + '</div>'
     + '<div style="margin:-2px 0 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
     +   '<button class="btn btn3 btnS" onclick="previewStudent()">👀 預覽學生版面</button>'
+    +   '<a class="btn btnS onlypc" href="https://docs.google.com/spreadsheets/d/11H-Ncq-EXReVpLdDT8AXpCvCFFLyqzbK3SW6L26gHQw/edit" target="_blank" rel="noopener" style="text-decoration:none;background:#2f8f3f;color:#fff">📄 學生名單 (Sheet)</a>'
     +   ((TAB === 'students' || TAB.indexOf('g:') === 0)
           ? '<input class="inp sm" id="q" placeholder="🔍 搜尋姓名／班號" value="' + esc(SEARCH) + '" oninput="SEARCH=this.value;renderTab()" style="flex:1;min-width:160px">'
           : '')
@@ -467,17 +539,17 @@ function renderTab(){
           + ' <span class="badge">' + list.length + ' 人</span>'
           + (k ? ' <span class="badge" style="background:#8a4a12">搜尋：' + esc(SEARCH) + '</span>' : '') + '</div>';
     if (!list.length) { c.innerHTML = h + '<div class="hint">沒有符合嘅學生</div>'; return; }
-    h += '<div class="tblwrap"><table class="rt"><thead><tr>' + (grp ? '' : '<th>組別</th>')
-      + '<th>班別</th><th>班號</th><th>姓名</th><th>積分</th><th>凍結</th><th>狀態</th><th>綁定</th><th>加分</th></tr></thead><tbody>';
+    h += '<div class="tblwrap"><table class="rt ct"><thead><tr>' + (grp ? '' : '<th>組別</th>')
+      + '<th>班別</th><th>班號</th><th>姓名</th><th>積分</th><th class="hide-s">狀態</th><th class="hide-s">綁定</th><th>加分</th></tr></thead><tbody>';
     list.forEach(s=>{
       h += '<tr>' + (grp ? '' : '<td data-label="組別" style="font-size:12px">' + esc(s.group) + '</td>')
         + '<td data-label="班別" style="font-size:13px">' + esc(s.cls) + '</td>'
         + '<td data-label="班號" style="font-size:13px">' + s.no + '</td>'
-        + '<td class="lead">' + esc(s.chi) + '<div style="font-size:11px;color:#a3803f">' + esc(s.eng) + '</div></td>'
+        + '<td class="lead">' + esc(s.chi) + (Number(s.frozen) > 0 ? ' <span title="有待處理申請" style="font-size:13px">🔒</span>' : '') + '<div style="font-size:11px;color:#a3803f">' + esc(s.eng) + '</div></td>'
         + '<td class="cost" data-label="積分">' + s.points + '</td>'
-        + '<td data-label="凍結" style="font-size:13px">' + (s.frozen||0) + '</td>'
-        + '<td data-label="狀態" style="font-size:13px">' + esc(s.status) + '</td>'
-        + '<td data-label="綁定" style="font-size:12px">' + (s.bindState ? esc(s.bindState) : '—') + '</td>'
+        + '<td class="hide-s" data-label="狀態" style="font-size:13px">' + esc(s.status) + '</td>'
+        + '<td class="hide-s" data-label="綁定" style="font-size:12px">' + (s.bindState ? esc(s.bindState) : '—')
+        + (s.bindState === '已批准' ? ' <button class="btn btnS" style="background:#c0392b;padding:4px 8px;font-size:11px" onclick="unbindAsk(\'' + esc(s.cls) + '\',' + s.no + ')">' + T('unbind') + '</button>' : '') + '</td>'
         + '<td class="act"><button class="btn btnS" onclick="addPts(\'' + s.cls + '\',' + s.no + ',\'' + esc(s.chi) + '\')">+分</button></td></tr>';
     });
     c.innerHTML = h + '</tbody></table></div>';
@@ -531,8 +603,20 @@ async function addPts(cls, no, name){
   catch (e) { toast(e.message, true); }
 }
 async function decide(cls, no, gift, ok){
-  try { await api(ok ? 'admin.approve' : 'admin.reject', { cls, no, gift }); toast(ok ? '已批准' : '已拒絕（分數已退回）'); await loadAdmin(); renderAdmin(); }
-  catch (e) { toast(e.message, true); }
+  ask('確定' + (ok ? '<b>批准</b>' : '<b>拒絕</b>') + ' ' + esc(cls) + ' 班 ' + no + ' 號嘅「<b>' + esc(gift) + '</b>」申請？'
+      + (ok ? '<br>批准後會正式扣分。' : '<br>拒絕後積分會退回學生。'),
+    async function(){
+      try { await api(ok ? 'admin.approve' : 'admin.reject', { cls, no, gift }); toast(ok ? '已批准' : '已拒絕（分數已退回）'); await loadAdmin(); renderAdmin(); }
+      catch (e) { toast(e.message, true); }
+    });
+}
+/* 老師解除綁定（學生綁錯時用）*/
+function unbindAsk(cls, no){
+  ask('確定解除 <b>' + esc(cls) + ' 班 ' + no + ' 號</b> 嘅帳號綁定？<br>解除後該 Google 帳號即刻失效，學生可以重新綁定。',
+    async function(){
+      try { await api('admin.undoBind', { cls: cls, no: no }); toast('已解除綁定'); await loadAdmin(); renderAdmin(); }
+      catch (e) { toast(e.message, true); }
+    });
 }
 async function approveBind(cls, no, ok){
   try {
