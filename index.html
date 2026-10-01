@@ -209,7 +209,7 @@ const I18N = {
     notFound:'找不到這個座號，請確認班別及班號', taken:'該座號已被綁定，請找老師', notEnoughN:'積分不足（差 {n} 分）', refresh2:'🔄 重新整理', auditTab:'🗂️ 操作紀錄',
     lookupFail:'未能確認座號（網絡問題），請再試一次', netErr:'網絡唔穩定，請再撳一次',
     alreadyReq:'「{gift}」你已申請，等候老師批核', giftGone:'此禮物已下架',
-    batchAdd:'➕ 全班加分', approveAll:'✅ 全部批准', previewBtn:'👀 預覽', leaveBtn:'🚪 退學', backBtn:'↩️ 復課'
+    batchAdd:'➕ 全組加分', approveAll:'✅ 全部批准', previewBtn:'👀 預覽', leaveBtn:'🚪 退學', backBtn:'↩️ 復課'
   },
   en: {
     appTitle:'Reward Shop', appSub:'Mathematics Reward Scheme 2026-2027',
@@ -238,7 +238,7 @@ const I18N = {
     notFound:'Seat number not found — please check', taken:'That seat number is already linked — ask your teacher', notEnoughN:'Not enough points (need {n} more)', refresh2:'🔄 Refresh', auditTab:'🗂️ Activity log',
     lookupFail:'Could not check that seat number (network problem) — please try again', netErr:'Network problem — please try again',
     alreadyReq:'You already applied for "{gift}" — waiting for approval', giftGone:'This reward is no longer available',
-    batchAdd:'➕ Add to whole class', approveAll:'✅ Approve all', previewBtn:'👀 View', leaveBtn:'🚪 Left school', backBtn:'↩️ Reactivate'
+    batchAdd:'➕ Add to whole group', approveAll:'✅ Approve all', previewBtn:'👀 View', leaveBtn:'🚪 Left school', backBtn:'↩️ Reactivate'
   }
 };
 function T(k, o){
@@ -305,7 +305,7 @@ function histName(name){
 
 /* ================= 狀態 ================= */
 let IDT = localStorage.getItem('sess') || sessionStorage.getItem('idtoken') || '';
-let ME = null, GIFTS = [], ADMIN = null, TAB = 'students', PREVIEW = null, SEARCH = '';
+let ME = null, GIFTS = [], ADMIN = null, TAB = 'gifts', PREVIEW = null, SEARCH = '';
 function groupLabel(g){ return String(g || '').replace('_MATH_', ' ').replace(/_/g, ' '); }
 
 /* ================= 工具 ================= */
@@ -333,6 +333,7 @@ function busyOff(){
   BUSY_N = Math.max(0, BUSY_N - 1);
   if (BUSY_N === 0) { try { const d = document.getElementById('busyOv'); if (d) d.parentNode.removeChild(d); } catch (e) {} }
 }
+const LONG_ACTIONS = ['admin.addPointsBatch', 'admin.approveAll', 'admin.recomputeFrozen', 'admin.upgrade', 'admin.autoTranslate'];
 const WRITE_ACTIONS = ['redeem', 'cancel', 'bind', 'admin.addPoints', 'admin.addPointsBatch', 'admin.approve',
                        'admin.approveAll', 'admin.reject', 'admin.saveGift', 'admin.saveImg', 'admin.moveGift',
                        'admin.deleteGift', 'admin.undoPoints', 'admin.undoBind', 'admin.setBind', 'admin.setState'];
@@ -346,7 +347,8 @@ async function api(action, payload){
     try {
       API_CTRL = new AbortController();
       opt.signal = API_CTRL.signal;
-      to = setTimeout(function(){ try { API_CTRL.abort(); } catch (e) {} }, 20000);   // 20 秒逾時，避免遮罩永久卡住
+      const ms = LONG_ACTIONS.indexOf(action) >= 0 ? 90000 : 20000;   // 批次 90 秒，其餘 20 秒
+      to = setTimeout(function(){ try { API_CTRL.abort(); } catch (e) {} }, ms);
     } catch (e) {}
     const r = await fetch(API, opt);
     const j = await r.json();
@@ -571,14 +573,15 @@ function setStateAsk(cls, no, toStatus){
 /* 全班／全組加分 */
 function classAddAsk(){
   const grp = TAB.indexOf('g:') === 0 ? TAB.slice(2) : '';
-  const list = grp ? ADMIN.students.filter(s => s.group === grp) : ADMIN.students.slice();
-  if (!list.length) { toast('沒有學生', true); return; }
+  if (!grp) { toast('請先選擇一個組別分頁', true); return; }
+  const list = ADMIN.students.filter(s => s.group === grp);
+  if (!list.length) { toast('該組沒有學生', true); return; }
   const v = prompt('為「' + (grp ? groupLabel(grp) : '全部') + '」共 ' + list.length + ' 位學生加分／扣分：\n（正數加分，負數扣分，單次上限 ±500）', '');
   if (v === null) return;
   const pts = Number(v);
   if (!pts) { toast('分數不可為 0', true); return; }
   const reason = prompt('原因（可留空）：', '') || '';
-  ask('確定為 <b>' + list.length + '</b> 位學生' + (grp ? '（' + esc(groupLabel(grp)) + '）' : '（全部）') + '<br>'
+  ask('確定為 <b>' + list.length + '</b> 位學生（' + esc(groupLabel(grp)) + '）<br>'
       + (pts > 0 ? '加' : '扣') + ' <b>' + Math.abs(pts) + '</b> 分？' + (reason ? '<br>原因：' + esc(reason) : '')
       + '<br><br>已退學學生會自動跳過。',
     async function(){
@@ -649,7 +652,8 @@ async function loadAdmin(){
   try {
     ADMIN = await api('admin.data');
     GIFTS = ADMIN.gifts;
-    try { const t = localStorage.getItem('admTab'); if (t) TAB = t; } catch (e) {}
+    try { const t = localStorage.getItem('admTab'); if (t && t !== 'students') TAB = t; } catch (e) {}
+    if (TAB === 'students') TAB = 'gifts';                       // 「全部」分頁已刪除
     return true;
   } catch (e) {
     toast('載入管理資料失敗：' + e.message + '（如已儲存，請按「🔄 重新整理」）', true);
@@ -678,15 +682,15 @@ function renderAdmin(){
   let html = '<div class="bar"><div class="nick">👩‍🏫 ' + esc(ME ? ME.student ? ME.student.email : ME.email : '') + ' 老師</div>'
     + '<button class="btn btn2 btnS" onclick="logout()">登出</button></div>' + st
     + '<div class="tabs">'
-    + tabBtn('students','📋 全部 (' + stu.length + ')') + gTabs + '</div>'
+    + gTabs + '</div>'
     + '<div class="tabs">'
     + tabBtn('pending','🎁 待批核 (' + pending.length + ')')
     + tabBtn('gifts','🎀 禮物清單') + tabBtn('logs','📜 加分紀錄') + tabBtn('audit', T('auditTab')) + '</div>'
     + '<div style="margin:-2px 0 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
     +   '<button class="btn btn3 btnS" onclick="previewStudent()">👀 預覽學生版面</button>'
-    +   (TAB === 'students' || TAB.indexOf('g:') === 0 ? '<button class="btn btn3 btnS" onclick="classAddAsk()">' + T('batchAdd') + '</button>' : '')
+    +   (TAB.indexOf('g:') === 0 ? '<button class="btn btn3 btnS" onclick="classAddAsk()">' + T('batchAdd') + '</button>' : '')
     +   '<a class="btn btnS onlypc" href="https://docs.google.com/spreadsheets/d/11H-Ncq-EXReVpLdDT8AXpCvCFFLyqzbK3SW6L26gHQw/edit" target="_blank" rel="noopener" style="text-decoration:none;background:#2f8f3f;color:#fff">📄 學生名單 (Sheet)</a>'
-    +   ((TAB === 'students' || TAB.indexOf('g:') === 0)
+    +   ((TAB.indexOf('g:') === 0)
           ? '<input class="inp sm" id="q" placeholder="🔍 搜尋姓名／班號" value="' + esc(SEARCH) + '" oninput="SEARCH=this.value;renderTab()" style="flex:1;min-width:160px">'
           : '')
     + '</div><div id="tabc"></div>'
@@ -704,10 +708,10 @@ function renderTab(){
     if (oc.indexOf("'" + TAB + "'") >= 0) b.classList.add('on');
   });
   const c = $('#tabc');
-  if (TAB === 'students' || TAB.indexOf('g:') === 0) {
-    const grp = TAB.indexOf('g:') === 0 ? TAB.slice(2) : '';
+  if (TAB.indexOf('g:') === 0) {
+    const grp = TAB.slice(2);
     const k = String(SEARCH || '').trim().toLowerCase();
-    let list = grp ? ADMIN.students.filter(s=>s.group === grp) : ADMIN.students.slice();
+    let list = ADMIN.students.filter(s=>s.group === grp);
     if (k) list = list.filter(s=>String(s.chi||'').toLowerCase().indexOf(k) >= 0
                               || String(s.eng||'').toLowerCase().indexOf(k) >= 0
                               || String(s.no) === k || (String(s.cls||'').toLowerCase() + String(s.no)) === k);
@@ -938,12 +942,7 @@ function editGift(row){
   const d = document.createElement('div'); d.id = 'gwrap';
   d.innerHTML = '<div class="modal"><div class="mbox">'
     + '<h3>🎀 ' + (row ? '編輯禮物' : '新增禮物') + '</h3>'
-    + '<div class="fld"><label>禮物圖片（可選；上載後會取代 emoji）</label>'
     +   '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">'
-    +     '<div class="ipv" id="gPrev">' + (GE.img ? '<img src="' + GE.img + '">' : '未有圖片') + '</div>'
-    +     '<input type="file" id="gFile" accept="image/*" style="display:none" onchange="pickImage(this)">'
-    +     '<button class="btn btnS btn3" onclick="document.getElementById(\'gFile\').click()">📷 選擇圖片</button>'
-    +     '<button class="btn btnS btn2" onclick="clearImg()">移除圖片</button>'
     +   '</div></div>'
     + '<div class="fld"><label>圖示 emoji（冇圖片時顯示）</label><input id="gIcon" value="' + esc(GE.icon) + '">'
     +   '<div class="epick">' + EMOJIS.map(function(e){ return '<button type="button" class="epb" onclick="pickEmoji(\'' + e + '\')">' + e + '</button>'; }).join('') + '</div>'
@@ -1040,14 +1039,8 @@ async function saveGiftForm(){
     cost: Number(val('gCost')) || 0, stock: (String(val('gStock')).trim() === '' ? 999 : Number(val('gStock'))),
     limitType: val('gLt'), limitN: Number(val('gLn')) || 1,
     on: val('gOn') === '是', note: val('gNote'), noteEn: val('gNoteEn') };
-  const img = GE.img || '';
   try {
     const r = await api('admin.saveGift', { gift: gift });
-    const before = (ADMIN.gifts.filter(x=>x.row === r.row)[0] || {}).img || '';
-    if (img !== before) {
-      if (img) await api('admin.saveImg', { row: r.row, data: img });
-      else if (before) await api('admin.saveImg', { row: r.row, data: '' });
-    }
     toast('已儲存'); closeGift(); await loadAdmin(); renderAdmin();
   } catch (e) { toast(e.message, true); }
 }
