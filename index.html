@@ -189,7 +189,8 @@ function histName(name){
 
 /* ================= 狀態 ================= */
 let IDT = localStorage.getItem('sess') || sessionStorage.getItem('idtoken') || '';
-let ME = null, GIFTS = [], ADMIN = null, TAB = 'students', PREVIEW = null;
+let ME = null, GIFTS = [], ADMIN = null, TAB = 'students', PREVIEW = null, SEARCH = '';
+function groupLabel(g){ return String(g || '').replace('_MATH_', ' ').replace(/_/g, ' '); }
 
 /* ================= 工具 ================= */
 const $ = s => document.querySelector(s);
@@ -246,7 +247,12 @@ async function boot(){
     GIFTS = h.gifts || [];
     renderStudent(h.reqs || []);
   } catch (e) {
-    if (String(e.message||'').indexOf('登入') >= 0) { sessionStorage.removeItem('idtoken'); IDT=''; renderLogin(); return; }
+    if (String(e.message||'').indexOf('登入') >= 0) {
+      try { sessionStorage.removeItem('idtoken'); localStorage.removeItem('sess'); } catch (x) {}
+      IDT = '';
+      try { toast('登入已失效，請重新登入（' + e.message + '）', true); } catch (x) {}
+      renderLogin(); return;
+    }
     shell('<div class="center"><h2>' + T('error') + '</h2><p>' + esc(e.message) + '</p><button class="btn" onclick="boot()">' + T('retry') + '</button></div>', true);
   }
 }
@@ -340,6 +346,7 @@ async function logout(){
 async function loadAdmin(){
   ADMIN = await api('admin.data');
   GIFTS = ADMIN.gifts;
+  try { const t = localStorage.getItem('admTab'); if (t) TAB = t; } catch (e) {}
 }
 function renderAdmin(){
   const stu = ADMIN.students, reqs = ADMIN.requests, logs = ADMIN.logs;
@@ -352,24 +359,52 @@ function renderAdmin(){
     + '<div><b>' + pending.length + '</b><span>待批核換領</span></div>'
     + '<div><b>' + binds.length + '</b><span>待批准綁定</span></div></div>';
 
+  /* 按組別分頁 */
+  const groups = [];
+  stu.forEach(s=>{ if (groups.indexOf(s.group) < 0) groups.push(s.group); });
+  const gTabs = groups.map(g=>{
+    const n = stu.filter(s=>s.group === g).length;
+    return tabBtn('g:' + g, '🏫 ' + groupLabel(g) + ' (' + n + ')');
+  }).join('');
+
   let html = '<div class="bar"><div class="nick">👩‍🏫 ' + esc(ME ? ME.student ? ME.student.email : ME.email : '') + ' 老師</div>'
     + '<button class="btn btn2 btnS" onclick="logout()">登出</button></div>' + st
     + '<div class="tabs">'
-    + tabBtn('students','📋 學生總表') + tabBtn('pending','🎁 待批核 (' + (pending.length + binds.length) + ')')
+    + tabBtn('students','📋 全部 (' + stu.length + ')') + gTabs + '</div>'
+    + '<div class="tabs">'
+    + tabBtn('pending','🎁 待批核 (' + (pending.length + binds.length) + ')')
     + tabBtn('gifts','🎀 禮物清單') + tabBtn('logs','📜 加分紀錄') + '</div>'
-    + '<div style="margin:-2px 0 12px"><button class="btn btn3 btnS" onclick="previewStudent()">👀 預覽學生版面</button></div><div id="tabc"></div>'
+    + '<div style="margin:-2px 0 12px;display:flex;gap:8px;flex-wrap:wrap;align-items:center">'
+    +   '<button class="btn btn3 btnS" onclick="previewStudent()">👀 預覽學生版面</button>'
+    +   ((TAB === 'students' || TAB.indexOf('g:') === 0)
+          ? '<input class="inp sm" id="q" placeholder="🔍 搜尋姓名／班號" value="' + esc(SEARCH) + '" oninput="SEARCH=this.value;renderTab()" style="flex:1;min-width:160px">'
+          : '')
+    + '</div><div id="tabc"></div>'
     + '<div class="foot"><button class="btn btn3" onclick="exportXlsx()">📊 匯出 Excel</button><button class="btn btn2" onclick="backup()">匯出 CSV</button><button class="btn btn2" onclick="upgradeSheet()">🔧 升級表格</button><button class="btn" onclick="boot()">重新整理</button></div>';
   shell(html);
   renderTab();
 }
-function tabBtn(id, label){ return '<button class="tab' + (TAB===id?' on':'') + '" onclick="TAB=\'' + id + '\';renderTab()">' + label + '</button>'; }
+function tabBtn(id, label){ return '<button class="tab' + (TAB===id?' on':'') + '" onclick="setTab(\'' + id + '\')">' + label + '</button>'; }
+function setTab(id){ TAB = id; try { localStorage.setItem('admTab', id); } catch (e) {} renderAdmin(); }
 function renderTab(){
   document.querySelectorAll('.tab').forEach(b=>b.classList.remove('on'));
   const c = $('#tabc');
-  if (TAB === 'students') {
-    let h = '<div class="tblwrap"><table><thead><tr><th>組別</th><th>班別</th><th>班號</th><th>姓名</th><th>積分</th><th>凍結</th><th>狀態</th><th>綁定</th><th>加分</th></tr></thead><tbody>';
-    ADMIN.students.forEach(s=>{
-      h += '<tr><td style="font-size:12px">' + esc(s.group) + '</td><td>' + esc(s.cls) + '</td><td>' + s.no + '</td>'
+  if (TAB === 'students' || TAB.indexOf('g:') === 0) {
+    const grp = TAB.indexOf('g:') === 0 ? TAB.slice(2) : '';
+    const k = String(SEARCH || '').trim().toLowerCase();
+    let list = grp ? ADMIN.students.filter(s=>s.group === grp) : ADMIN.students.slice();
+    if (k) list = list.filter(s=>String(s.chi||'').toLowerCase().indexOf(k) >= 0
+                              || String(s.eng||'').toLowerCase().indexOf(k) >= 0
+                              || String(s.no) === k || (String(s.cls||'').toLowerCase() + String(s.no)) === k);
+    let h = '<div class="sechd">' + (grp ? '🏫 ' + esc(groupLabel(grp)) : '📋 全部學生')
+          + ' <span class="badge">' + list.length + ' 人</span>'
+          + (k ? ' <span class="badge" style="background:#8a4a12">搜尋：' + esc(SEARCH) + '</span>' : '') + '</div>';
+    if (!list.length) { c.innerHTML = h + '<div class="hint">沒有符合嘅學生</div>'; return; }
+    h += '<div class="tblwrap"><table><thead><tr>' + (grp ? '' : '<th>組別</th>')
+      + '<th>班別</th><th>班號</th><th>姓名</th><th>積分</th><th>凍結</th><th>狀態</th><th>綁定</th><th>加分</th></tr></thead><tbody>';
+    list.forEach(s=>{
+      h += '<tr>' + (grp ? '' : '<td style="font-size:12px">' + esc(s.group) + '</td>')
+        + '<td>' + esc(s.cls) + '</td><td>' + s.no + '</td>'
         + '<td style="text-align:left">' + esc(s.chi) + '<div style="font-size:11px;color:#a3803f">' + esc(s.eng) + '</div></td>'
         + '<td class="cost">' + s.points + '</td><td>' + (s.frozen||0) + '</td>'
         + '<td style="font-size:12px">' + esc(s.status) + '</td><td style="font-size:11px">' + (s.bindState ? esc(s.bindState) : '—') + '</td>'
