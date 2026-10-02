@@ -27,6 +27,9 @@ tr:nth-child(even) td{background:#fffaee}
 .ico{font-size:26px;line-height:1}
 .item{font-weight:800;color:#5a3407;text-align:left;padding-left:12px}
 .item small{display:block;font-weight:600;color:#a3803f;font-size:11.5px;line-height:1.35;margin-top:2px}
+.gt2{table-layout:fixed}
+.gt2 td.desc{font-size:12px;color:#7a5a2a;line-height:1.4}
+.gt2 .act .btn{padding:5px 7px;font-size:12px;margin:1px}
 .gt{table-layout:fixed}
 .gt .c1{width:8%} .gt .c2{width:20%} .gt .c3{width:34%} .gt .c4{width:11%} .gt .c5{width:11%} .gt .c6{width:16%}
 .gt td.desc{font-size:12.5px;color:#7a5a2a;line-height:1.45;text-align:left;padding:8px;white-space:pre-line}
@@ -315,6 +318,8 @@ function histName(name){
 /* ================= 狀態 ================= */
 let IDT = localStorage.getItem('sess') || sessionStorage.getItem('idtoken') || '';
 let ME = null, GIFTS = [], ADMIN = null, TAB = 'gifts', PREVIEW = null, SEARCH = '';
+let METHODS = [];                    // 獲得積分方法（由後端 home 帶落嚟）
+const TEST_GROUP = 'S7_MATH_7A';     // 測試用群組（唔計入學生總數）
 function groupLabel(g){ return String(g || '').replace('_MATH_', ' ').replace(/_/g, ' '); }
 
 /* ================= 工具 ================= */
@@ -424,6 +429,7 @@ async function boot(){
     if (!IDT || CLIENT_ID.indexOf('PASTE') === 0) { renderLogin(); return; }
     const h = await api('home');          /* 一次過攞齊（原本要 2–3 次來回）*/
     ME = h.me;
+    METHODS = h.methods || [];
     if (IDT.indexOf('.') >= 0) {          /* 舊式 Google 憑證 → 靜靜升級成長效 session */
       try { const r = await api('login'); IDT = r.session; localStorage.setItem('sess', IDT); sessionStorage.removeItem('idtoken'); } catch (e) {}
     }
@@ -546,7 +552,7 @@ function renderStudent(reqs){
 }
 /* 獲得積分方法（學生／老師共用彈窗） */
 function showMethods(){
-  const ms = (ME && ME.methods) || [];
+  const ms = METHODS || [];
   const rows = ms.map(function(m){
     const c = (LANG === 'en' && m.condEn) ? m.condEn : m.cond;
     return '<tr><td class="lead" style="text-align:left;padding:10px">' + esc(c) + '</td>'
@@ -562,6 +568,22 @@ function showMethods(){
     + '</div></div>';
   document.body.appendChild(d);
 }
+/* 完整 emoji 選擇器（獨立彈窗，唔會影響編輯版面） */
+function openEmojiAll(){
+  const grid = EMOJIS.map(function(e){
+    return '<button type="button" class="epb" onclick="pickEmoji(this.textContent);closeEmojiAll()">' + e + '</button>';
+  }).join('');
+  const d = document.createElement('div'); d.id = 'ewrap';
+  d.innerHTML = '<div class="modal"><div class="mbox" style="max-width:520px">'
+    + '<h3>😀 選擇 emoji</h3>'
+    + '<div class="epick" style="max-height:52vh">' + grid + '</div>'
+    + '<div class="hint" style="margin-top:8px">👆 一撳即填到「圖示」格；亦可自己打／貼任何 emoji（電腦 <b>Win + .</b>）</div>'
+    + '<div class="foot"><div><button class="btn" onclick="closeEmojiAll()">關閉</button></div></div>'
+    + '</div></div>';
+  document.body.appendChild(d);
+}
+function closeEmojiAll(){ const d = document.getElementById('ewrap'); if (d) d.remove(); }
+
 function closeMethods(){ const d = document.getElementById('mwrap'); if (d) d.remove(); }
 
 function previewStudent(){
@@ -575,6 +597,7 @@ function previewStudent(){
   PREVIEW = { reqs: reqs };
   ME = { student: st, available: (st.points || 0) - (st.frozen || 0), preview: true };
   GIFTS = ADMIN.gifts;
+  METHODS = ADMIN.methods || [];
   renderStudent(reqs);
 }
 function exitPreview(){ PREVIEW = null; ME = null; boot(); }
@@ -803,9 +826,10 @@ function renderAdmin(){
   const stu = ADMIN.students, reqs = ADMIN.requests, logs = ADMIN.logs;
   const pending = reqs.filter(r=>r.state === '待批核');
   const binds = stu.filter(s=>s.bindState === '已批准');
+  const real = stu.filter(s=>s.group !== TEST_GROUP);          // 測試群組唔計入學生總數
   const total = stu.reduce((a,s)=>a+(s.points||0),0);
   const st = '<div class="stat">'
-    + '<div><b>' + stu.length + '</b><span>學生總數（4 組）</span></div>'
+    + '<div><b>' + real.length + '</b><span>學生總數（4 組）' + (stu.length > real.length ? '＋' + (stu.length - real.length) + ' 測試' : '') + '</span></div>'
     + '<div><b>' + pending.length + '</b><span>待批核換領</span></div>'
     + '<div><b>' + binds.length + '</b><span>已綁定帳戶</span></div></div>';
 
@@ -911,18 +935,22 @@ function renderTab(){
       : '<div class="hint">暫無待批核申請</div>';
     c.innerHTML = h;
   } else if (TAB === 'gifts') {
-    let h = '<div class="tblwrap"><table class="rt"><thead><tr><th>圖示</th><th>名稱</th><th>積分</th><th>供應</th><th>上架</th><th>操作</th></tr></thead><tbody>';
+    let h = '<div class="tblwrap"><table class="rt gt2"><thead><tr><th style="width:6%">圖示</th>'
+      + '<th style="width:18%">名稱</th><th style="width:30%">內容描述</th><th style="width:10%">積分</th>'
+      + '<th style="width:9%">供應</th><th style="width:9%">上架</th><th style="width:17%">操作</th></tr></thead><tbody>';
     ADMIN.gifts.forEach(g=>{
       const on = (g.on === true || g.on === '是');
       h += '<tr><td class="ico">' + iconHtml(g, 40) + '</td><td class="lead">' + esc(g.name)
         + (g.nameEn ? '<div style="font-size:11px;color:#a3803f">' + esc(g.nameEn) + '</div>' : '<div style="font-size:11px;color:#c0392b">（未有英文名）</div>')
-        + '</td><td class="cost" data-label="積分">' + g.cost + '</td>'
+        + '</td>'
+        + '<td class="desc" data-label="內容描述" style="font-size:12px;white-space:pre-line">'
+        + (g.desc ? esc(g.desc) : '<span style="color:#c9b48a">—</span>') + '</td>'
+        + '<td class="cost" data-label="積分">' + g.cost + '</td>'
         + '<td data-label="供應">' + (Number(g.stock) > 0 ? '✅ 有貨' : '⛔ 冇貨') + '</td>'
         + '<td data-label="上架">' + (on ? '✅ 已上架' : '⛔ 已下架') + '</td>'
         + '<td class="act">'
         +   '<button class="btn btnS" onclick="moveGift(' + g.row + ',-1)" title="上移">⬆️</button> '
         +   '<button class="btn btnS" onclick="moveGift(' + g.row + ',1)" title="下移">⬇️</button> '
-        +   '<button class="btn btnS ' + (on ? 'btn2' : 'btn3') + '" onclick="toggleGift(' + g.row + ',' + (on ? '0' : '1') + ')">' + (on ? '下架' : '上架') + '</button> '
         +   '<button class="btn btnS" onclick="editGift(' + g.row + ')">編輯</button> '
         +   '<button class="btn btnS" style="background:#8e2f2f" title="刪除禮物" onclick="deleteGiftAsk(' + g.row + ',\'' + esc(g.name || '') + '\')">🗑️</button></td></tr>';
     });
@@ -1110,6 +1138,7 @@ function editGift(row){
     +   '<div class="fld"><label>圖示 emoji</label><input id="gIcon" value="' + esc(GE.icon) + '">'
     +     '<div class="eq">' + EMOJI_QUICK.map(function(e){ return '<button type="button" class="epb" onclick="pickEmoji(this.textContent)">' + e + '</button>'; }).join('') + '<button type="button" class="epb" style="width:auto;padding:0 12px;font-size:12px" onclick="toggleEpick()">😀 更多</button></div>'
     +     '<div class="epick" id="epickFull" style="display:none">' + EMOJIS.map(function(e){ return '<button type="button" class="epb" onclick="pickEmoji(this.textContent)">' + e + '</button>'; }).join('') + '</div>'
+    +     '<div style="margin-top:8px"><button type="button" class="btn btnS" onclick="openEmojiAll()">🌐 完整 emoji 選擇器（不影響版面）</button></div>'
     +   '</div>'
     +   '<div class="fld"><label>禮物名稱（中文）</label><input id="gName" value="' + esc(GE.name) + '"></div>'
     + '</div>'
