@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>數學科獎勵計劃</title>
+<title>獎勵兌換所</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:"Microsoft JhengHei","PingFang TC","Noto Sans TC",sans-serif;color:#4a2f10;
@@ -100,6 +100,38 @@ select.inp{width:auto;text-align:left}
 .epb{font-size:21px;line-height:1;padding:5px 7px;margin:0 3px 3px 0;border:2px solid #e8cf9a;border-radius:10px;background:#fff;cursor:pointer;display:inline-block}
 .epb:active{background:#f6e7c8;transform:translateY(1px)}
 /* ===== 手機版（≤620px）===== */
+
+/* ================= iPad（平板）621–1100px ================= */
+@media (min-width:621px) and (max-width:1100px){
+  .wrap{padding:14px}
+  .card{padding:16px}
+  /* 觸控目標加大（手指操作）*/
+  .btn{padding:12px 18px;font-size:15px;min-height:44px}
+  .btnS{padding:9px 14px;font-size:13px;min-height:38px}
+  .tab{padding:11px 15px;font-size:14px}
+  .inp{font-size:16px;padding:10px 12px;min-height:44px}
+  .pin{width:78px;padding:9px 6px;font-size:16px;min-height:42px}
+  /* 表格：欄位保持可讀，不足時可橫向滑動 */
+  .tblwrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table.rt{min-width:700px}
+  table.rt th{padding:9px 6px;font-size:13px}
+  table.rt td{padding:8px 7px;font-size:14px}
+  .gt2{min-width:700px}
+  /* 統計卡固定 3 欄 */
+  .stat{grid-template-columns:repeat(3,1fr)}
+  /* 分頁列可橫向滑動 */
+  .tabs{flex-wrap:nowrap;overflow-x:auto;padding-bottom:6px}
+  /* emoji 快選加大 */
+  .eq .epb{width:44px;height:44px;font-size:20px}
+  /* 彈窗 */
+  .mbox{max-width:640px;max-height:90vh}
+  /* 學生禮物表：內容描述仍要夠闊，兌換掣唔會溢出 */
+  .gt{min-width:660px}
+  .gt .c3{width:32%} .gt .c6{width:18%}
+  .gt .act .btn{padding:11px 8px;font-size:14px}
+  .gt2 .act .btn{padding:6px 8px;font-size:12px}
+}
+
 @media (max-width:620px){
   body{padding:10px}
   .card{padding:15px 13px;border-width:6px;border-radius:20px;box-shadow:0 8px 0 #a36c1c,0 12px 24px rgba(0,0,0,.2)}
@@ -195,7 +227,7 @@ const CLIENT_ID = '554383219138-c18g9omd2flmdpi3nttdpikd9ejsb1um.apps.googleuser
 let LANG = localStorage.getItem('lang') || 'zh';
 const I18N = {
   zh: {
-    appTitle:'獎勵兌換所', appSub:'數學科獎勵計劃 2026-2027',
+    appTitle:'獎勵兌換所', appSub:'積分兌換所2026-2027',
     login:'請先登入', loginHint:'使用你的校內 Google 帳號登入', loginMail:'（@qts.edu.hk）',
     firstTime:'首次登入需要輸入班別及班號，老師批准後即可使用。',
     bindTitle:'首次使用：確認身分', bindDesc:'請輸入你的班別及班號（座位號）<br>例：4C 班 5 號 → 選「4C」、輸入「5」',
@@ -224,7 +256,7 @@ const I18N = {
     batchAdd:'➕ 全組加分', approveAll:'✅ 全部批准', previewBtn:'👀 預覽', leaveBtn:'🚪 退學', backBtn:'↩️ 復課'
   },
   en: {
-    appTitle:'Reward Shop', appSub:'Mathematics Reward Scheme 2026-2027',
+    appTitle:'Reward Shop', appSub:'Points Exchange 2026-2027',
     login:'Please sign in', loginHint:'Sign in with your school Google account', loginMail:'(@qts.edu.hk)',
     firstTime:'First time? Enter your class and class number. Your teacher will approve your account.',
     bindTitle:'First time — confirm your identity', bindDesc:'Enter your class and class number (seat no.)<br>Example: Class 4C, seat 5 → choose "4C" and type "5"',
