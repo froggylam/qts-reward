@@ -33,6 +33,10 @@ tr:nth-child(even) td{background:#fffaee}
 .gt{table-layout:fixed}
 .gt .c1{width:8%} .gt .c2{width:20%} .gt .c3{width:34%} .gt .c4{width:11%} .gt .c5{width:11%} .gt .c6{width:16%}
 .gt td.desc{font-size:12.5px;color:#7a5a2a;line-height:1.45;text-align:left;padding:8px;white-space:pre-line}
+.cn{text-decoration:underline;cursor:pointer;color:#c0392b;font-weight:800}
+.times{display:inline-block;margin-top:5px;background:#fff6e0;border:1.5px solid #e8cf9a;border-radius:20px;
+       padding:1px 9px;font-size:11px;font-weight:800;color:#8a4a12;white-space:nowrap}
+.times.hot{background:#ffe8e8;border-color:#f2a8a8;color:#c0392b}
 .pin{width:62px;padding:6px 4px;font-size:14px;font-weight:800;text-align:center;border:2px solid #c98b2e;border-radius:8px;background:#fffdf5;color:#5a3407}
 .pin:focus{outline:none;border-color:#2f8f3f;background:#f2fff2}
 .eq{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
@@ -250,7 +254,8 @@ const I18N = {
     inStock:'✅ 有貨', outStock:'⛔ 冇貨', pendingTag:'已申請，待批核', undoBtn:'↩️ 撤回',
     availPoints:'可用積分：', totalPts:'總分 ', frozenShort:'🔒 凍結 ',
     pickCls:'請選擇班別', confirmBind2:'確定你係 <b>{cls} 班 {no} 號</b> {who} 嗎？<br><b>一經確定，學生不能自行更改。</b>如打錯，請找老師協助。',
-    notFound:'找不到這個座號，請確認班別及班號', taken:'該座號已被綁定，請找老師', notEnoughN:'積分不足（差 {n} 分）', refresh2:'🔄 重新整理', auditTab:'🗂️ 操作紀錄', methodBtn:'📋 獲得積分方法', pickReason:'選擇原因', editReasons:'✏️ 編輯原因清單', addReason:'➕ 新增', noReason:'（未有原因，請先按「✏️ 編輯原因清單」新增）', methodTab:'📋 積分方法', thCond:'條件', thPts:'可獲積分',
+    notFound:'找不到這個座號，請確認班別及班號', taken:'該座號已被綁定，請找老師', notEnoughN:'積分不足（差 {n} 分）', refresh2:'🔄 重新整理', auditTab:'🗂️ 操作紀錄', methodBtn:'📋 獲得積分方法', pickReason:'選擇原因', editReasons:'✏️ 編輯原因清單', addReason:'➕ 新增', noReason:'（未有原因，請先按「✏️ 編輯原因清單」新增）', methodTab:'📋 積分方法', thCond:'條件', thPts:'可獲積分', redeemedN:'已兌換 {n} 次', tabEx:'🎁 兌換紀錄', tabPt:'📜 加分紀錄',
+    clearCount:'🔄 清除兌換次數', totalRedeemed:'已兌換', cond:'條件', descNote:'內容描述',
     lookupFail:'未能確認座號（網絡問題），請再試一次', netErr:'網絡唔穩定，請再撳一次',
     alreadyReq:'「{gift}」你已申請，等候老師批核', giftGone:'此禮物已下架',
     batchAdd:'➕ 全組加分', approveAll:'✅ 全部批准', previewBtn:'👀 預覽', leaveBtn:'🚪 退學', backBtn:'↩️ 復課'
@@ -279,7 +284,8 @@ const I18N = {
     inStock:'✅ In stock', outStock:'⛔ Out of stock', pendingTag:'Applied (pending)', undoBtn:'↩️ Undo',
     availPoints:'Available:', totalPts:'Total ', frozenShort:'🔒 On hold ',
     pickCls:'Select your class', confirmBind2:'Are you <b>Class {cls} no. {no}</b> {who}?<br><b>Students cannot change this later.</b> Ask your teacher if you made a mistake.',
-    notFound:'Seat number not found — please check', taken:'That seat number is already linked — ask your teacher', notEnoughN:'Not enough points (need {n} more)', refresh2:'🔄 Refresh', auditTab:'🗂️ Activity log', methodBtn:'📋 How to earn points', pickReason:'Reason', editReasons:'✏️ Edit reasons', addReason:'➕ Add', noReason:'(No reasons yet — click “✏️ Edit reasons” to add)', methodTab:'📋 Ways to earn', thCond:'How', thPts:'Points',
+    notFound:'Seat number not found — please check', taken:'That seat number is already linked — ask your teacher', notEnoughN:'Not enough points (need {n} more)', refresh2:'🔄 Refresh', auditTab:'🗂️ Activity log', methodBtn:'📋 How to earn points', pickReason:'Reason', editReasons:'✏️ Edit reasons', addReason:'➕ Add', noReason:'(No reasons yet — click “✏️ Edit reasons” to add)', methodTab:'📋 Ways to earn', thCond:'How', thPts:'Points', redeemedN:'Redeemed {n} time(s)', tabEx:'🎁 Redemptions', tabPt:'📜 Points added',
+    clearCount:'🔄 Reset counts', totalRedeemed:'Redeemed', cond:'Condition', descNote:'Description',
     lookupFail:'Could not check that seat number (network problem) — please try again', netErr:'Network problem — please try again',
     alreadyReq:'You already applied for "{gift}" — waiting for approval', giftGone:'This reward is no longer available',
     batchAdd:'➕ Add to whole group', approveAll:'✅ Approve all', previewBtn:'👀 View', leaveBtn:'🚪 Left school', backBtn:'↩️ Reactivate'
@@ -544,14 +550,19 @@ function renderStudent(reqs){
   const isPrev = !!(ME && ME.preview);
   let rows = '';
   const pendReqs = (reqs || []).filter(r=>r.state === '待批核');
+  const maxRdm = Math.max.apply(null, GIFTS.map(function(x){ return Number(x.redeemed || 0); }).concat([0]));
   GIFTS.forEach(g=>{
     const already = pendReqs.some(r => (g.id && r.giftId) ? (String(r.giftId) === String(g.id))
                                                         : (String(r.gift) === String(g.name)));
     const can = avail >= g.cost && g.stock > 0 && !isPrev && !already;
     const stockTxt = (Number(g.stock) > 0) ? T('inStock') : T('soldOut');
     const nm = gName(g), nt = gNote(g);
+    const rdm = Number(g.redeemed || 0);
     rows += '<tr><td class="ico">' + iconHtml(g) + '</td>'
-      + '<td class="item lead" style="padding:8px">' + esc(nm) + '</td>'
+      + '<td class="item lead" style="padding:8px">' + esc(nm)
+        + (rdm > 0 ? '<div><span class="times' + (rdm === maxRdm ? ' hot' : '') + '">'
+            + (rdm === maxRdm ? '🔥 ' : '✅ ') + T('redeemedN', { n: rdm }) + '</span></div>' : '')
+        + '</td>'
       + '<td class="desc" data-label="' + T('thDesc') + '">' + esc(nt) + '</td>'
       + '<td class="cost" data-label="' + T('thCost') + '">' + g.cost + '</td>'
       + '<td class="stock" data-label="' + T('thStock') + '">' + stockTxt + '</td>'
@@ -587,8 +598,10 @@ function showMethods(){
   const ms = METHODS || [];
   const rows = ms.map(function(m){
     const c = (LANG === 'en' && m.condEn) ? m.condEn : m.cond;
-    return '<tr><td class="lead" style="text-align:left;padding:10px">' + esc(c) + '</td>'
-      + '<td class="cost" data-label="' + T('thPts') + '">' + m.pts + '</td></tr>';
+    const ds = (LANG === 'en' && m.descEn) ? m.descEn : (m.desc || '');
+    return '<tr><td class="lead" style="text-align:left;padding:10px">' + esc(c)
+      + (ds ? '<div style="font-size:12px;color:#7a5a2a;font-weight:600;margin-top:3px;white-space:pre-line">' + esc(ds) + '</div>' : '')
+      + '</td><td class="cost" data-label="' + T('thPts') + '">' + m.pts + '</td></tr>';
   }).join('');
   const d = document.createElement('div'); d.id = 'mwrap';
   d.innerHTML = '<div class="modal"><div class="mbox">'
@@ -734,6 +747,61 @@ async function logout(){
 }
 
 /* ================= 老師：管理台 ================= */
+/* 撳學生姓名 → 個人紀錄（兌換／加分兩個切換） */
+function showStudent(cls, no){
+  const found = (ADMIN.students || []).filter(function(x){ return String(x.cls) === String(cls) && Number(x.no) === Number(no); })[0];
+  if (!found) { toast('找不到學生', true); return; }
+  window._SS = { cls: String(cls), no: Number(no), tab: 'ex' };
+  renderStudentModal();
+}
+function setStuTab(t){ if (window._SS) { window._SS.tab = t; renderStudentModal(); } }
+function closeStu(){ const d = document.getElementById('sswrap'); if (d) d.remove(); window._SS = null; }
+function renderStudentModal(){
+  const st = window._SS; if (!st) return;
+  const s = (ADMIN.students || []).filter(function(x){ return String(x.cls) === st.cls && Number(x.no) === st.no; })[0] || {};
+  const reqs = (ADMIN.requests || []).filter(function(r){ return String(r.cls) === st.cls && Number(r.no) === st.no; });
+  const logs = (ADMIN.logs || []).filter(function(l){ return String(l.cls) === st.cls && Number(l.no) === st.no; });
+  const done = reqs.filter(function(r){ return r.state === '已批准'; }).length;
+  let rows = '';
+  if (st.tab === 'ex') {
+    rows = reqs.map(function(r){
+      const c = r.state === '已批准' ? '#2f8f3f' : (r.state === '已拒絕' ? '#c0392b' : '#d0296a');
+      const ic = r.state === '已批准' ? '✅' : (r.state === '已拒絕' ? '❌' : '⏳');
+      return '<tr><td style="text-align:left;padding:9px;font-weight:800;color:#5a3407">' + ic + ' ' + esc(histName(r.gift)) + '</td>'
+        + '<td class="cost" style="color:#c0392b">−' + (r.cost || 0) + '</td>'
+        + '<td style="color:' + c + ';font-weight:800;white-space:nowrap">' + esc(stateTxt(r.state)) + '</td>'
+        + '<td style="color:#a3803f;font-size:11.5px;white-space:nowrap">' + esc(r.time || '') + '</td></tr>';
+    }).join('');
+    if (!rows) rows = '<tr><td colspan="4" style="padding:14px;color:#a3803f">未有兌換紀錄</td></tr>';
+  } else {
+    rows = logs.map(function(l){
+      const pos = Number(l.points) > 0;
+      return '<tr><td style="text-align:left;padding:9px;font-weight:800;color:#5a3407">' + esc(l.reason || '') + '</td>'
+        + '<td class="cost" style="color:' + (pos ? '#2f8f3f' : '#c0392b') + '">' + (pos ? '+' : '') + l.points + '</td>'
+        + '<td style="color:#8a4a12;font-weight:700;white-space:nowrap">' + esc(l.by || '老師') + '</td>'
+        + '<td style="color:#a3803f;font-size:11.5px;white-space:nowrap">' + esc(l.time || '') + '</td></tr>';
+    }).join('');
+    if (!rows) rows = '<tr><td colspan="4" style="padding:14px;color:#a3803f">未有加分紀錄</td></tr>';
+  }
+  const d = document.getElementById('sswrap') || document.createElement('div');
+  d.id = 'sswrap';
+  d.innerHTML = '<div class="modal"><div class="mbox" style="max-width:560px">'
+    + '<h3>👩‍🎓 ' + esc(st.cls) + ' (' + st.no + ') ' + esc(s.chi || '') + '</h3>'
+    + '<div class="stat" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px">'
+    + '<div><b>' + (s.points || 0) + '</b><span>現有積分</span></div>'
+    + '<div><b>' + (Number(s.frozen) || 0) + '</b><span>🔒 凍結</span></div>'
+    + '<div><b>' + done + '</b><span>' + T('totalRedeemed') + '</span></div></div>'
+    + '<div class="row2" style="gap:8px;margin-bottom:10px">'
+    + '<button class="btn ' + (st.tab === 'ex' ? 'btn3' : '') + '" style="flex:1" onclick="setStuTab(\'ex\')">' + T('tabEx') + '</button>'
+    + '<button class="btn ' + (st.tab === 'pt' ? 'btn3' : '') + '" style="flex:1" onclick="setStuTab(\'pt\')">' + T('tabPt') + '</button></div>'
+    + '<div class="tblwrap"><table class="rt"><thead><tr><th style="text-align:left">' + (st.tab === 'ex' ? '禮物' : '原因')
+    + '</th><th>分數</th><th>' + (st.tab === 'ex' ? '狀態' : '操作者') + '</th><th>時間</th></tr></thead><tbody>'
+    + rows + '</tbody></table></div>'
+    + '<div class="foot"><div><button class="btn" onclick="closeStu()">關閉</button></div></div>'
+    + '</div></div>';
+  if (!document.getElementById('sswrap')) document.body.appendChild(d);
+}
+
 /* 表格內輸入分數 → 一次過加分 */
 function applyPts(){
   const items = [];
@@ -812,26 +880,54 @@ async function delReason(row){
   catch (e) { toast(e.message, true); }
 }
 
-/* 積分方法：新增／編輯 */
+/* 積分方法：新增／編輯（彈出表單，同禮物一樣） */
 function editMethod(row){
-  const m = row ? ((ADMIN.methods || []).filter(x=>x.row === row)[0] || {}) : {};
-  const nm = prompt('條件（例：測驗 80 分以上／準時交齊功課）', m.cond || '');
-  if (nm === null) return;
-  if (!String(nm).trim()) { toast('請輸入條件', true); return; }
-  const pv = prompt('可獲積分（負數＝扣分）', m.pts === undefined ? '' : m.pts);
-  if (pv === null) return;
-  const pts = Number(pv);
+  const m = row ? ((ADMIN.methods || []).filter(function(x){ return x.row === row; })[0] || {}) : {};
+  window._METH = { row: row || 0, cond: m.cond || '', condEn: m.condEn || '', desc: m.desc || '',
+                   descEn: m.descEn || '', pts: (m.pts === undefined ? 0 : m.pts) };
+  const M = window._METH;
+  const d = document.getElementById('mewrap') || document.createElement('div');
+  d.id = 'mewrap';
+  d.innerHTML = '<div class="modal"><div class="mbox" style="max-width:600px">'
+    + '<h3>' + (row ? '✏️ 編輯條件' : '➕ 新增條件') + '</h3>'
+    + '<div class="row2"><div class="fld"><label>條件（中文）</label><input id="mCond" value="' + esc(M.cond) + '"></div>'
+    + '<div class="fld"><label>Condition (English)　英文條件</label><input id="mCondEn" value="' + esc(M.condEn) + '"></div></div>'
+    + '<div class="row2"><div class="fld"><label>可獲積分</label><input id="mPts" type="number" value="' + M.pts + '"></div>'
+    + '<div class="fld"></div></div>'
+    + '<div class="fld"><label>內容描述（中文）　<span style="font-weight:600;color:#a3803f">可多行</span></label>'
+    + '<textarea id="mDesc" rows="4">' + esc(M.desc) + '</textarea></div>'
+    + '<div class="fld"><label>Description (English)　英文內容描述</label>'
+    + '<textarea id="mDescEn" rows="4">' + esc(M.descEn) + '</textarea></div>'
+    + '<div class="foot"><div><button class="btn btn3" onclick="saveMethodForm()">儲存</button> '
+    + '<button class="btn" onclick="closeMethodEdit()">取消</button></div></div>'
+    + '<div class="hint" style="margin-top:8px">💡 英文欄位<b>留空 = 系統自動翻譯</b>（只需輸入中文）</div>'
+    + '</div></div>';
+  if (!document.getElementById('mewrap')) document.body.appendChild(d);
+}
+function closeMethodEdit(){ const d = document.getElementById('mewrap'); if (d) d.remove(); window._METH = null; }
+async function saveMethodForm(){
+  const M = window._METH || {};
+  const val = function(id){ const el = document.getElementById(id); return el ? String(el.value || '') : ''; };
+  const cond = val('mCond').trim();
+  const pts = Number(val('mPts'));
+  if (!cond) { toast('請輸入條件', true); return; }
   if (!isFinite(pts) || Math.floor(pts) !== pts) { toast('積分必須是整數', true); return; }
-  ask('確定' + (row ? '更新' : '新增') + '條件？<br><b>' + esc(nm) + '</b>　→　<b>' + pts + '</b> 分', async function(){
-    try { await api('admin.saveMethod', { method: { row: row || 0, cond: String(nm), pts: pts } });
-      toast('已儲存 ✓'); await refreshAdmin(); }
-    catch (e) { toast(e.message, true); }
-  });
+  const payload = { method: { row: M.row || 0, cond: cond, condEn: val('mCondEn').trim(),
+                              desc: val('mDesc').trim(), descEn: val('mDescEn').trim(), pts: pts } };
+  try {
+    await api('admin.saveMethod', payload);
+    closeMethodEdit(); toast('已儲存 ✓');
+    await loadAdmin(); renderAdmin();
+  } catch (e) { toast(e.message, true); }
+}
+async function moveMethod(row, dir){
+  try { await api('admin.moveMethod', { row: row, dir: dir }); await loadAdmin(); renderTab(); }
+  catch (e) { toast(e.message, true); }
 }
 function delMethodAsk(row){
-  const m = (ADMIN.methods || []).filter(x=>x.row === row)[0] || {};
+  const m = (ADMIN.methods || []).filter(function(x){ return x.row === row; })[0] || {};
   ask('確定刪除條件？<br><b>' + esc(m.cond || '') + '</b><br><span style="color:#c0392b">刪除後無法復原</span>', async function(){
-    try { await api('admin.deleteMethod', { row: row }); toast('已刪除 ✓'); await refreshAdmin(); }
+    try { await api('admin.deleteMethod', { row: row }); toast('已刪除 ✓'); await loadAdmin(); renderAdmin(); }
     catch (e) { toast(e.message, true); }
   });
 }
@@ -922,7 +1018,8 @@ function renderTab(){
       h += '<tr>' + (grp ? '' : '<td data-label="組別" style="font-size:12px">' + esc(s.group) + '</td>')
         + '<td data-label="班別" style="font-size:13px">' + esc(s.cls) + '</td>'
         + '<td data-label="班號" style="font-size:13px">' + s.no + '</td>'
-        + '<td class="lead">' + esc(s.chi)
+        + '<td class="lead"><span class="cn" data-cls="' + esc(s.cls) + '" data-no="' + s.no
+        + '" onclick="showStudent(this.dataset.cls,this.dataset.no)">' + esc(s.chi) + '</span>'
         + (s.frozenBad ? ' <span title="凍結分數與申請紀錄不符，請按「🧮 重算凍結」" style="font-size:13px">⚠️</span>'
                        : (Number(s.frozen) > 0 ? ' <span title="有待處理申請" style="font-size:13px">🔒</span>' : ''))
         + '<div style="font-size:11px;color:#a3803f">' + esc(s.eng) + '</div></td>'
@@ -939,13 +1036,17 @@ function renderTab(){
     const ms = (ADMIN.methods || []);
     let h = '<div class="sechd">' + T('methodTab') + ' <span class="badge">' + ms.length + '</span>'
       + '<button class="btn btn3 btnS" style="margin-left:8px" onclick="editMethod(0)">➕ 新增條件</button></div>'
-      + '<div class="tblwrap"><table class="rt"><thead><tr><th style="width:60%">' + T('thCond') + '</th><th>'
-      + T('thPts') + '</th><th>操作</th></tr></thead><tbody>';
-    if (!ms.length) h += '<tr><td colspan="3" style="padding:14px;color:#a3803f">未有條件，按「➕ 新增條件」開始</td></tr>';
+      + '<div class="tblwrap"><table class="rt gt2"><thead><tr><th style="width:26%">' + T('thCond')
+      + '</th><th style="width:44%">' + T('descNote') + '</th><th style="width:10%">' + T('thPts') + '</th>'
+      + '<th style="width:20%">操作</th></tr></thead><tbody>';
+    if (!ms.length) h += '<tr><td colspan="4" style="padding:14px;color:#a3803f">未有條件，按「➕ 新增條件」開始</td></tr>';
     ms.forEach(function(m){
       h += '<tr><td class="lead" style="text-align:left;padding:9px;white-space:pre-line">' + esc(m.cond) + '</td>'
+        + '<td class="desc" data-label="' + T('descNote') + '" style="white-space:pre-line">' + (m.desc ? esc(m.desc) : '<span style="color:#c9b48a">—</span>') + '</td>'
         + '<td class="cost" data-label="' + T('thPts') + '">' + m.pts + '</td>'
-        + '<td class="act"><button class="btn btnS" onclick="editMethod(' + m.row + ')">編輯</button> '
+        + '<td class="act"><button class="btn btnS" onclick="moveMethod(' + m.row + ',-1)" title="上移">⬆️</button> '
+        + '<button class="btn btnS" onclick="moveMethod(' + m.row + ',1)" title="下移">⬇️</button> '
+        + '<button class="btn btnS" onclick="editMethod(' + m.row + ')">編輯</button> '
         + '<button class="btn btnS" style="background:#c0392b" onclick="delMethodAsk(' + m.row + ')">刪除</button></td></tr>';
     });
     c.innerHTML = h + '</tbody></table></div>';
@@ -967,7 +1068,9 @@ function renderTab(){
       : '<div class="hint">暫無待批核申請</div>';
     c.innerHTML = h;
   } else if (TAB === 'gifts') {
-    let h = '<div class="tblwrap"><table class="rt gt2"><thead><tr><th style="width:6%">圖示</th>'
+    let h = '<div class="sechd">🎀 禮物清單 <span class="badge">' + ADMIN.gifts.length + '</span>'
+      + '<button class="btn btn2 btnS" style="margin-left:8px" onclick="resetRedeemAsk()">' + T('clearCount') + '</button></div>'
+      + '<div class="tblwrap"><table class="rt gt2"><thead><tr><th style="width:6%">圖示</th>'
       + '<th style="width:18%">名稱</th><th style="width:30%">內容描述</th><th style="width:10%">積分</th>'
       + '<th style="width:9%">供應</th><th style="width:9%">上架</th><th style="width:17%">操作</th></tr></thead><tbody>';
     ADMIN.gifts.forEach(g=>{
@@ -1049,6 +1152,17 @@ function deleteGiftAsk(row, name){
       } catch (e) { toast(e.message, true); }
     });
 }
+/* 清除全部禮物嘅兌換次數（只影響顯示，唔刪紀錄） */
+function resetRedeemAsk(){
+  ask('確定<b>清除所有禮物嘅兌換次數</b>？<br><br>之後只會重新計算「現在起」嘅兌換 ✓<br><span style="color:#a3803f">換領歷史紀錄唔會被刪除</span>', async function(){
+    try {
+      const r = await api('admin.resetRedeemCount', {});
+      toast('已清除，由 ' + (r.from || '') + ' 起重新計算 ✓');
+      await loadAdmin(); renderAdmin();
+    } catch (e) { toast(e.message, true); }
+  });
+}
+
 /* 調整禮物次序 */
 async function moveGift(row, dir){
   try { await api('admin.moveGift', { row: row, dir: dir }); await loadAdmin(); renderAdmin(); }
