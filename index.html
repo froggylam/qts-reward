@@ -356,7 +356,12 @@ function histName(name){
 /* ================= 狀態 ================= */
 let IDT = localStorage.getItem('sess') || sessionStorage.getItem('idtoken') || '';
 let ME = null, GIFTS = [], ADMIN = null, TAB = 'gifts', PREVIEW = null, SEARCH = '';
-let METHODS = [];                    // 獲得積分方法（由後端 home 帶落嚟）
+let METHODS = [];
+let MYREQS = [];                     // 學生自己嘅換領請求（本地更新用）
+function nowStr(){
+  const d = new Date(), p = function(n){ return (n < 10 ? '0' : '') + n; };
+  return d.getFullYear() + '/' + p(d.getMonth()+1) + '/' + p(d.getDate()) + ' ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+}                    // 獲得積分方法（由後端 home 帶落嚟）
 const TEST_GROUP = 'S7_MATH_7A';     // 測試用群組（唔計入學生總數）
 function groupLabel(g){ return String(g || '').replace('_MATH_', ' ').replace(/_/g, ' '); }
 
@@ -478,7 +483,8 @@ async function boot(){
     if (ME.pending) { renderPending(); return; }
     if (!ME.bound) { renderBind(); return; }
     GIFTS = h.gifts || [];
-    renderStudent(h.reqs || []);
+    MYREQS = h.reqs || [];
+    renderStudent(MYREQS);
   } catch (e) {
     if (/未登入|登入憑證|請重新登入|not signed in|sign-in|sign in again/i.test(String(e.message||''))) {
       try { sessionStorage.removeItem('idtoken'); localStorage.removeItem('sess'); } catch (x) {}
@@ -719,12 +725,24 @@ function approveAllAsk(){
 }
 async function redeem(row){
   const g0 = (GIFTS || []).filter(g=>Number(g.row) === Number(row))[0] || {};
-  const name = gName(g0), cost = Number(g0.cost || 0);
+  const name = gName(g0), cost = Number(g0.cost || 0), cost0 = cost;
   const left = Math.max(0, (ME && ME.available ? ME.available : 0) - cost);
   ask(T('confirmRedeemFull', { gift: esc(name), cost: cost, left: left }), async function(){
     const btn = document.querySelector('button[data-row="' + row + '"]');
     if (btn) { btn.disabled = true; btn.classList.add('dis'); btn.textContent = T('pendingTag'); }   // 即時停用，防連撳
-    try { const r = await api('redeem', { giftRow: row }); toast(T('redeemSent', { n: r.available })); setTimeout(boot, 900); }
+    try {
+      const r = await api('redeem', { giftRow: row });
+      toast(T('redeemSent', { n: r.available }));
+      /* 本地更新：唔需要重新載入全部 */
+      const cost = Number(r.cost !== undefined ? r.cost : cost0);
+      if (ME && ME.student) {
+        ME.student.frozen = (Number(ME.student.frozen) || 0) + cost;
+        ME.available = Number(r.available !== undefined ? r.available : Math.max(0, (ME.available || 0) - cost));
+      }
+      MYREQS = (MYREQS || []).concat([{ gift: r.gift || name, cost: cost, state: '待批核',
+                                        time: nowStr(), row: 0, giftId: (g0 && g0.id) || '' }]);
+      renderStudent(MYREQS);
+    }
     catch (e) {
       if (btn) { btn.disabled = false; btn.classList.remove('dis'); btn.textContent = T('thRedeem'); }
       toast(e.message, true);
@@ -734,7 +752,17 @@ async function redeem(row){
 /* 學生自行取消申請（自動解凍）*/
 function cancelAsk(gift, reqRow, giftId){
   ask(T('confirmCancel', { gift: esc(gift) }), async function(){
-    try { await api('cancel', { reqRow: reqRow || 0, giftId: giftId || '', gift: gift }); toast(T('cancelled')); setTimeout(boot, 900); }
+    try {
+      const r = await api('cancel', { reqRow: reqRow || 0, giftId: giftId || '', gift: gift });
+      toast(T('cancelled'));
+      const cost = Number(r && r.cost ? r.cost : 0);
+      if (ME && ME.student && cost) {
+        ME.student.frozen = Math.max(0, (Number(ME.student.frozen) || 0) - cost);
+        ME.available = (Number(ME.available) || 0) + cost;
+      }
+      MYREQS = (MYREQS || []).filter(function (x) { return !(x.state === '待批核' && String(x.gift) === String(gift)); });
+      renderStudent(MYREQS);
+    }
     catch (e) { toast(e.message, true); }
   });
 }
@@ -845,7 +873,18 @@ async function submitPts(){
     PTSIN = {};
     closePts();
     toast('已加分：' + r.ok + ' 位' + (r.fail && r.fail.length ? '｜' + r.fail.length + ' 位失敗' : ''));
-    await loadAdmin();
+    /* 本地更新：只改受影響嘅學生 + 加紀錄 */
+    const tnow = nowStr();
+    (r.list || []).forEach(function (x) {
+      const stu = (ADMIN.students || []).filter(function (y) { return String(y.cls) === String(x.cls) && Number(y.no) === Number(x.no); })[0];
+      if (!stu) return;
+      const before = Number(stu.points) || 0;
+      if (x.after !== undefined && x.after !== null) stu.points = Number(x.after);
+      else stu.points = before + Number(x.points || 0);
+      ADMIN.logs = ADMIN.logs || [];
+      ADMIN.logs.unshift({ time: tnow, cls: x.cls, no: x.no, name: x.name || stu.chi, points: (Number(stu.points) - before), reason: rsn, by: '老師', row: 0 });
+    });
+    if (ADMIN.logs && ADMIN.logs.length > 40) ADMIN.logs.length = 40;
     renderAdmin();
   } catch (e) { toast(e.message, true); }
 }
@@ -1187,7 +1226,26 @@ async function decide(cls, no, gift, ok, reqRow){
   ask('確定' + (ok ? '<b>批准</b>' : '<b>拒絕</b>') + ' ' + esc(cls) + ' 班 ' + no + ' 號嘅「<b>' + esc(gift) + '</b>」申請？'
       + (ok ? '<br>批准後會正式扣分。' : '<br>拒絕後積分會退回學生。'),
     async function(){
-      try { await api(ok ? 'admin.approve' : 'admin.reject', { cls, no, gift, reqRow: reqRow || 0 }); toast(ok ? '已批准' : '已拒絕（分數已退回）'); await loadAdmin(); renderAdmin(); }
+      try {
+        const r = await api(ok ? 'admin.approve' : 'admin.reject', { cls, no, gift, reqRow: reqRow || 0 });
+        toast(ok ? '已批准' : '已拒絕（分數已退回）');
+        /* 本地更新 */
+        const rq = (ADMIN.requests || []).filter(function (x) {
+          return String(x.cls) === String(cls) && Number(x.no) === Number(no) && String(x.gift) === String(gift) && x.state === '待批核';
+        })[0];
+        const cost = rq ? Number(rq.cost || 0) : 0;
+        (ADMIN.requests || []).forEach(function (x) {
+          if (String(x.cls) === String(cls) && Number(x.no) === Number(no) && String(x.gift) === String(gift) && x.state === '待批核') {
+            x.state = (r && r.state) ? r.state : (ok ? '已批准' : '已拒絕');
+          }
+        });
+        const stu = (ADMIN.students || []).filter(function (x) { return String(x.cls) === String(cls) && Number(x.no) === Number(no); })[0];
+        if (stu) {
+          if (r && r.points !== undefined) stu.points = Number(r.points);
+          stu.frozen = Math.max(0, (Number(stu.frozen) || 0) - cost);
+        }
+        renderAdmin();
+      }
       catch (e) { toast(e.message, true); }
     });
 }
