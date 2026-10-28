@@ -33,7 +33,8 @@ tr:nth-child(even) td{background:#fffaee}
 .gt{table-layout:fixed}
 .gt .c1{width:8%} .gt .c2{width:20%} .gt .c3{width:34%} .gt .c4{width:11%} .gt .c5{width:11%} .gt .c6{width:16%}
 .gt td.desc{font-size:12.5px;color:#7a5a2a;line-height:1.45;text-align:left;padding:8px;white-space:pre-line}
-.cn{text-decoration:underline;cursor:pointer;color:#c0392b;font-weight:800}
+.cn{text-decoration:underline;color:#c0392b;font-weight:800}
+.cnbox{cursor:pointer}
 .times{display:inline-block;margin-top:5px;background:#fff6e0;border:1.5px solid #e8cf9a;border-radius:20px;
        padding:1px 9px;font-size:11px;font-weight:800;color:#8a4a12;white-space:nowrap}
 .times.hot{background:#ffe8e8;border-color:#f2a8a8;color:#c0392b}
@@ -104,6 +105,37 @@ select.inp{width:auto;text-align:left}
 .epb{font-size:21px;line-height:1;padding:5px 7px;margin:0 3px 3px 0;border:2px solid #e8cf9a;border-radius:10px;background:#fff;cursor:pointer;display:inline-block}
 .epb:active{background:#f6e7c8;transform:translateY(1px)}
 /* ===== 手機版（≤620px）===== */
+
+
+/* ================= 字體整體放大（B 方案 +2.5px）================= */
+.wrap{font-size:17.5px !important}
+table.rt th{font-size:16.5px !important}
+table.rt td{font-size:15.5px !important}
+.btn{font-size:16.5px !important}
+.btnS{font-size:14.5px !important}
+.tab{font-size:15.5px !important}
+.hint{font-size:15.5px !important}
+.sechd{font-size:17.5px !important}
+.nick,.pill{font-size:17.5px !important}
+.stat b{font-size:27px !important}
+.stat span{font-size:14.5px !important}
+.gt td.desc{font-size:15px !important}
+.item small{font-size:13.5px !important}
+.pin{font-size:16.5px !important;width:74px !important}
+.fld label{font-size:14.5px !important}
+.fld input,.fld select,.fld textarea{font-size:17px !important}
+.mbox h3{font-size:19px !important}
+.badge{font-size:13.5px !important}
+@media (max-width:620px){
+  .wrap{font-size:16.5px !important}
+  table.rt td{font-size:15px !important}
+  .btn{font-size:15.5px !important}
+  .btnS{font-size:14px !important}
+  .tab{font-size:15px !important}
+  .hint{font-size:15px !important}
+  .gt td.desc{font-size:14.5px !important}
+  .pin{width:68px !important}
+}
 
 /* ================= iPad（平板）621–1100px ================= */
 @media (min-width:621px) and (max-width:1100px){
@@ -220,7 +252,7 @@ select.inp{width:auto;text-align:left}
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
-<div class="wrap" id="app"><div class="card"><div class="center"><span class="spin"></span><p style="margin-top:12px">載入中…</p></div></div></div>
+<div class="wrap" id="app"><div class="card"><div class="center"><span class="spin"></span><p style="margin-top:12px">載入中…</p><p style="margin-top:10px;font-size:13px;color:#a3803f;line-height:1.6">⏳ 載入約需 5 至 10 秒，請耐心等候<br>系統正在運作，並非故障，無須重新整理</p></div></div></div>
 <div class="toast" id="toast"></div>
 <script>
 /* ================= 設定 ================= */
@@ -254,7 +286,7 @@ const I18N = {
     inStock:'✅ 有貨', outStock:'⛔ 冇貨', pendingTag:'已申請，待批核', undoBtn:'↩️ 撤回',
     availPoints:'可用積分：', totalPts:'總分 ', frozenShort:'🔒 凍結 ',
     pickCls:'請選擇班別', confirmBind2:'確定你係 <b>{cls} 班 {no} 號</b> {who} 嗎？<br><b>一經確定，學生不能自行更改。</b>如打錯，請找老師協助。',
-    notFound:'找不到這個座號，請確認班別及班號', taken:'該座號已被綁定，請找老師', notEnoughN:'積分不足（差 {n} 分）', refresh2:'🔄 重新整理', auditTab:'🗂️ 操作紀錄', methodBtn:'📋 獲得積分方法', pickReason:'選擇原因', editReasons:'✏️ 編輯原因清單', addReason:'➕ 新增', noReason:'（未有原因，請先按「✏️ 編輯原因清單」新增）', methodTab:'📋 積分方法', thCond:'條件', thPts:'可獲積分', redeemedN:'已兌換 {n} 次', tabEx:'🎁 兌換紀錄', tabPt:'📜 加分紀錄',
+    notFound:'找不到這個座號，請確認班別及班號', taken:'該座號已被綁定，請找老師', notEnoughN:'積分不足（差 {n} 分）', refresh2:'🔄 重新整理', auditTab:'🗂️ 操作紀錄', methodBtn:'📋 獲得積分方法', pickReason:'選擇原因', editReasons:'✏️ 編輯原因清單', addReason:'➕ 新增', noReason:'（未有原因，請先按「✏️ 編輯原因清單」新增）', methodTab:'📋 積分方法', thCond:'條件', thPts:'可獲積分', patience:'⏳ 登入及載入約需 5 至 10 秒，請耐心等候（系統正在運作，並非故障，無須重新整理）', redeemedN:'已兌換 {n} 次', tabEx:'🎁 兌換紀錄', tabPt:'📜 加分紀錄',
     clearCount:'🔄 清除兌換次數', totalRedeemed:'已兌換', cond:'條件', descNote:'內容描述',
     lookupFail:'未能確認座號（網絡問題），請再試一次', netErr:'網絡唔穩定，請再撳一次',
     alreadyReq:'「{gift}」你已申請，等候老師批核', giftGone:'此禮物已下架',
@@ -284,7 +316,7 @@ const I18N = {
     inStock:'✅ In stock', outStock:'⛔ Out of stock', pendingTag:'Applied (pending)', undoBtn:'↩️ Undo',
     availPoints:'Available:', totalPts:'Total ', frozenShort:'🔒 On hold ',
     pickCls:'Select your class', confirmBind2:'Are you <b>Class {cls} no. {no}</b> {who}?<br><b>Students cannot change this later.</b> Ask your teacher if you made a mistake.',
-    notFound:'Seat number not found — please check', taken:'That seat number is already linked — ask your teacher', notEnoughN:'Not enough points (need {n} more)', refresh2:'🔄 Refresh', auditTab:'🗂️ Activity log', methodBtn:'📋 How to earn points', pickReason:'Reason', editReasons:'✏️ Edit reasons', addReason:'➕ Add', noReason:'(No reasons yet — click “✏️ Edit reasons” to add)', methodTab:'📋 Ways to earn', thCond:'How', thPts:'Points', redeemedN:'Redeemed {n} time(s)', tabEx:'🎁 Redemptions', tabPt:'📜 Points added',
+    notFound:'Seat number not found — please check', taken:'That seat number is already linked — ask your teacher', notEnoughN:'Not enough points (need {n} more)', refresh2:'🔄 Refresh', auditTab:'🗂️ Activity log', methodBtn:'📋 How to earn points', pickReason:'Reason', editReasons:'✏️ Edit reasons', addReason:'➕ Add', noReason:'(No reasons yet — click “✏️ Edit reasons” to add)', methodTab:'📋 Ways to earn', thCond:'How', thPts:'Points', patience:'⏳ Signing in and loading takes about 5–10 seconds. Please wait — the system is working normally.', redeemedN:'Redeemed {n} time(s)', tabEx:'🎁 Redemptions', tabPt:'📜 Points added',
     clearCount:'🔄 Reset counts', totalRedeemed:'Redeemed', cond:'Condition', descNote:'Description',
     lookupFail:'Could not check that seat number (network problem) — please try again', netErr:'Network problem — please try again',
     alreadyReq:'You already applied for "{gift}" — waiting for approval', giftGone:'This reward is no longer available',
@@ -396,7 +428,7 @@ const WRITE_ACTIONS = ['redeem', 'cancel', 'bind', 'admin.addPoints', 'admin.add
                        'admin.deleteGift', 'admin.undoPoints', 'admin.undoBind', 'admin.setBind', 'admin.setState'];
 let API_CTRL = null;
 async function api(action, payload){
-  if (WRITE_ACTIONS.indexOf(action) >= 0) busyOn('處理中，請稍等…');
+  if (WRITE_ACTIONS.indexOf(action) >= 0) busyOn('處理中…約需 5 秒，請耐心等候，毋須重複點擊');
   let to = null;
   try {
     const body = Object.assign({ action, token: IDT }, payload || {});
@@ -443,7 +475,9 @@ function shell(inner, withLang){
 function renderLogin(){
   shell('<div class="center"><h2>' + T('login') + '</h2><p>' + T('loginHint') + '<br>' + T('loginMail') + '</p>'
     + '<div id="gbtn"></div>'
-    + '<div class="hint">' + T('firstTime') + '</div>' + installHint() + '</div>', true);
+    + '<div class="hint">' + T('firstTime') + '</div>'
+    + '<div class="hint" style="margin-top:8px;background:#fff6d8;border:2px dashed #e0b060">' + T('patience') + '</div>'
+    + installHint() + '</div>', true);
   waitGoogle(function(){
     google.accounts.id.initialize({ client_id: CLIENT_ID, callback: onCredential });
     google.accounts.id.renderButton($('#gbtn'), { theme:'outline', size:'large', text:'signin_with', locale: LANG === 'en' ? 'en' : 'zh_TW', width:280 });
@@ -584,7 +618,7 @@ function renderStudent(reqs){
         + (r.state === '待批核' ? ' <button class="btn btnS" style="background:#c0392b;padding:5px 9px;font-size:12px" onclick="cancelAsk(\'' + esc(r.gift) + '\',' + (r.row || 0) + ',\'' + esc(r.giftId || '') + '\')">' + T('cancelReqBtn') + '</button>' : '') + '</td>'
         + '<td data-label="' + T('thTime') + '">' + esc(r.time) + '</td></tr>';
   });
-  const who = (LANG === 'en' && s.eng) ? s.eng : s.chi;
+  const who = (LANG === 'en' && s.eng) ? s.eng : (s.chi || s.eng || ('座號 ' + s.no));
   shell('<div class="bar"><div class="pill">' + T('availPoints') + '<em>' + avail + '</em> ⭐</div>'
     + '<div class="nick">' + esc(s.cls) + ' (' + s.no + ') ' + esc(who)
     + (Number(s.frozen) > 0 ? '・' + T('totalPts') + s.points + '・' + T('frozenShort') + s.frozen : '') + '</div>'
@@ -814,7 +848,7 @@ function renderStudentModal(){
   const d = document.getElementById('sswrap') || document.createElement('div');
   d.id = 'sswrap';
   d.innerHTML = '<div class="modal"><div class="mbox" style="max-width:560px">'
-    + '<h3>👩‍🎓 ' + esc(st.cls) + ' (' + st.no + ') ' + esc(s.chi || '') + '</h3>'
+    + '<h3>👩‍🎓 ' + esc(st.cls) + ' (' + st.no + ') ' + esc(s.chi || s.eng || '') + '</h3>'
     + '<div class="stat" style="grid-template-columns:repeat(3,1fr);margin-bottom:12px">'
     + '<div><b>' + (s.points || 0) + '</b><span>現有積分</span></div>'
     + '<div><b>' + (Number(s.frozen) || 0) + '</b><span>🔒 凍結</span></div>'
@@ -1057,8 +1091,9 @@ function renderTab(){
       h += '<tr>' + (grp ? '' : '<td data-label="組別" style="font-size:12px">' + esc(s.group) + '</td>')
         + '<td data-label="班別" style="font-size:13px">' + esc(s.cls) + '</td>'
         + '<td data-label="班號" style="font-size:13px">' + s.no + '</td>'
-        + '<td class="lead"><span class="cn" data-cls="' + esc(s.cls) + '" data-no="' + s.no
-        + '" onclick="showStudent(this.dataset.cls,this.dataset.no)">' + esc(s.chi) + '</span>'
+        + '<td class="lead cnbox" data-cls="' + esc(s.cls) + '" data-no="' + s.no
+        + '" onclick="showStudent(this.dataset.cls,this.dataset.no)">'
+        + '<span class="cn">' + esc(s.chi || s.eng || ('座號 ' + s.no)) + '</span>'
         + (s.frozenBad ? ' <span title="凍結分數與申請紀錄不符，請按「🧮 重算凍結」" style="font-size:13px">⚠️</span>'
                        : (Number(s.frozen) > 0 ? ' <span title="有待處理申請" style="font-size:13px">🔒</span>' : ''))
         + '<div style="font-size:11px;color:#a3803f">' + esc(s.eng) + '</div></td>'
